@@ -100,4 +100,118 @@ class AuthRepository implements IAuthService {
       return left(const MainFailure.clientFailure());
     }
   }
+
+  @override
+  Future<Either<MainFailure, Unit>> sendOtp({required String email}) async {
+    try {
+      final response = await _dio.post(
+        '/users/send-otp',
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.serverFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, Unit>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/users/verify-otp',
+        data: {'email': email, 'otp': otp},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.authFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, Unit>> forgotPassword(
+      {required String email}) async {
+    try {
+      final response = await _dio.post(
+        '/users/forgot-password',
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.serverFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, Unit>> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/users/reset-password',
+        data: {
+          'email': email,
+          'otp': otp,
+          'newPassword': newPassword,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.authFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, Unit>> logout() async {
+    try {
+      final response = await _dio.post('/users/logout');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.serverFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, Unit>> refreshAccessToken() async {
+    try {
+      final response = await _dio.post('/users/refresh-access-token');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.authFailure());
+      }
+    } catch (e) {
+      return left(const MainFailure.clientFailure());
+    }
+  }
 }
