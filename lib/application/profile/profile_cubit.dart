@@ -28,20 +28,28 @@ class ProfileCubit extends Cubit<ProfileState> {
     ));
   }
 
+  void profileImageChanged(String path) {
+    emit(state.copyWith(profileImagePath: path, failureOrSuccessOption: none()));
+  }
+
   Future<void> updateProfile({
     required UserModel user,
     String? profileImagePath,
   }) async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(isLoading: true, failureOrSuccessOption: none()));
 
     final failureOrSuccess = await _userService.updateUserDetails(
       user: user,
-      profileImagePath: profileImagePath,
+      profileImagePath: profileImagePath ?? state.profileImagePath,
     );
 
     emit(state.copyWith(
       isLoading: false,
       failureOrSuccessOption: some(failureOrSuccess),
+      // Clean up the temporary path on success
+      profileImagePath: failureOrSuccess.isRight() ? null : state.profileImagePath,
+      // Update the user model in state on success
+      userOption: failureOrSuccess.isRight() ? some(user) : state.userOption,
     ));
   }
 }

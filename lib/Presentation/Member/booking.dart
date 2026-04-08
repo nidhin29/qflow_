@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qflow/Presentation/common/book_widget.dart';
 import 'package:qflow/Presentation/common/file_widget.dart';
+import 'package:qflow/application/appointment/appointment_cubit.dart';
+import 'package:qflow/application/appointment/appointment_state.dart';
 import 'package:qflow/constants/const.dart';
+import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 
 class BookingPage extends StatelessWidget {
   const BookingPage({super.key});
@@ -434,27 +438,79 @@ class BookingPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ButtonStyle(
-                        minimumSize: WidgetStateProperty.all(Size(330.w, 52.h)),
-                        backgroundColor: WidgetStateProperty.all(Colors.black),
-                        overlayColor:
-                            WidgetStateProperty.all(Colors.transparent),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.2.r),
+                    BlocConsumer<AppointmentCubit, AppointmentState>(
+                      listener: (context, state) {
+                        state.failureOrSuccessOption.fold(
+                          () => null,
+                          (either) => either.fold(
+                            (f) => ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Booking Failed')),
+                            ),
+                            (_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Booking Successful')),
+                              );
+                              Navigator.of(context).pop();
+                            },
                           ),
-                        ),
-                      ),
-                      child: Text(
-                        'Book Now',
-                        style: GoogleFonts.ptSans(
-                            textStyle: TextStyle(
-                                fontWeight: FontWeight.w400,
-                                fontSize: 18.sp,
-                                color: Colors.white)),
-                      ),
+                        );
+                      },
+                      builder: (context, state) {
+                        return ElevatedButton(
+                          onPressed: state.isLoading
+                              ? null
+                              : () {
+                                  final appointment = AppointmentModel(
+                                    hospitalId: '123', // Dummy for now
+                                    hospitalName:
+                                        'Dr. KM Cherian Institute of Medical Science',
+                                    hospitalAddress: 'Kallishery,Alappuzha',
+                                    appointmentDate: selectedDate.value
+                                        .toIso8601String()
+                                        .split('T')[0],
+                                    appointmentTime:
+                                        selectedTime.value.format(context),
+                                    estimatedTime: 'Pending',
+                                    tokenNumber: 'TBD',
+                                    department: selectedDepartment.value ??
+                                        'General',
+                                    departmentName: selectedDepartment.value ??
+                                        'General',
+                                    patientName: selectedPatient.value ??
+                                        'Self',
+                                  );
+
+                                  context
+                                      .read<AppointmentCubit>()
+                                      .bookAppointment(appointment);
+                                },
+                          style: ButtonStyle(
+                            minimumSize:
+                                WidgetStateProperty.all(Size(330.w, 52.h)),
+                            backgroundColor:
+                                WidgetStateProperty.all(Colors.black),
+                            overlayColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16.2.r),
+                              ),
+                            ),
+                          ),
+                          child: state.isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
+                              : Text(
+                                  'Book Now',
+                                  style: GoogleFonts.ptSans(
+                                      textStyle: TextStyle(
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 18.sp,
+                                          color: Colors.white)),
+                                ),
+                        );
+                      },
                     )
                   ],
                 ),

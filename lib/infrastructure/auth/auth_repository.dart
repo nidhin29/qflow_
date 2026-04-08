@@ -1,18 +1,24 @@
+import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:injectable/injectable.dart';
+import 'package:qflow/domain/auth/app_session.dart';
 import 'package:qflow/domain/auth/auth_service.dart';
+import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/domain/core/failures.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 @LazySingleton(as: IAuthService)
 class AuthRepository implements IAuthService {
   final Dio _dio;
+  final FlutterSecureStorage _storage;
+  final AppSession _session;
 
-  AuthRepository(this._dio);
+  AuthRepository(this._dio, this._storage, this._session);
 
   @override
-  Future<Either<MainFailure, Unit>> registerWithEmailAndPassword({
+  Future<Either<MainFailure, AuthSuccess>> registerWithEmailAndPassword({
     required String emailAddress,
     required String password,
     required String fullName,
@@ -28,7 +34,7 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return right(unit);
+        return right(AuthSuccess.incomplete);
       } else {
         return left(const MainFailure.serverFailure());
       }
@@ -38,7 +44,7 @@ class AuthRepository implements IAuthService {
   }
 
   @override
-  Future<Either<MainFailure, Unit>> signInWithEmailAndPassword({
+  Future<Either<MainFailure, AuthSuccess>> signInWithEmailAndPassword({
     required String emailAddress,
     required String password,
   }) async {
@@ -51,52 +57,79 @@ class AuthRepository implements IAuthService {
         },
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return right(unit);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        log('AuthRepository: Response data: ${response.data}');
+        final data = response.data['data'];
+        final access = data['accessToken'] ?? data['access_token'];
+        final refresh = data['refreshToken'] ?? data['refresh_token'];
+        final username = data['username'] ?? data['fullName'] ?? '';
+        
+        await _storage.write(key: 'access_token', value: access);
+        await _storage.write(key: 'refresh_token', value: refresh);
+        _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
+        _session.username = username;
+
+        if (response.statusCode == 201) {
+          return right(AuthSuccess.incomplete);
+        } else {
+          return right(AuthSuccess.complete);
+        }
       } else {
         return left(const MainFailure.authFailure());
       }
     } catch (e) {
-      print(e);
       return left(const MainFailure.clientFailure());
     }
   }
 
   @override
-  Future<Either<MainFailure, Unit>> signInWithGoogle() async {
+  Future<Either<MainFailure, AuthSuccess>> signInWithGoogle() async {
     try {
-      final googleSignIn = GoogleSignIn();
+      final googleSignIn = GoogleSignIn(
+        serverClientId:
+            '796184189112-36k5b1r52phggfn5d7rpotmttvv2vhvm.apps.googleusercontent.com',
+      );
       final googleUser = await googleSignIn.signIn();
 
-      if (googleUser == null) return left(const MainFailure.clientFailure());
+      if (googleUser == null) {
+        return left(const MainFailure.clientFailure());
+      }
 
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
+      final payload = {
+        'tokenID': idToken,
+        'email': googleUser.email,
+        'fullName': googleUser.displayName ?? 'Google User',
+      };
 
-      // 1. Send Google ID Token to backend to get Verify Token
-      final verifyResponse = await _dio.post(
-        '/users/google/verify-token', // Placeholder endpoint
-        data: {'idToken': idToken, 'email': googleUser.email},
+      final response = await _dio.post(
+        '/users/google-login',
+        data: payload,
       );
 
-      if (verifyResponse.statusCode != 200) {
-        return left(const MainFailure.serverFailure());
-      }
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        log('AuthRepository: Google Login Response: ${response.data}');
+        final data = response.data['data'];
+        final access = data['accessToken'] ?? data['access_token'];
+        final refresh = data['refreshToken'] ?? data['refresh_token'];
+        final username = data['username'] ?? data['fullName'] ?? '';
 
-      final verifyToken = verifyResponse.data['verifyToken'];
+        await _storage.write(key: 'access_token', value: access);
+        await _storage.write(key: 'refresh_token', value: refresh);
+        _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
+        _session.username = username;
 
-      // 2. Send Verify Token to get final JWT
-      final loginResponse = await _dio.post(
-        '/users/google/login', // Placeholder endpoint
-        data: {'verifyToken': verifyToken},
-      );
-
-      if (loginResponse.statusCode == 200) {
-        return right(unit);
+        if (response.statusCode == 201) {
+          return right(AuthSuccess.incomplete);
+        } else {
+          return right(AuthSuccess.complete);
+        }
       } else {
         return left(const MainFailure.authFailure());
       }
     } catch (e) {
+      if (e is DioException) {}
       return left(const MainFailure.clientFailure());
     }
   }
@@ -131,6 +164,22 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        log('AuthRepository: Verify OTP Response: ${response.data}');
+        final data = response.data['data'] ?? response.data;
+        final access = data['accessToken'] ?? data['access_token'];
+        final refresh = data['refreshToken'] ?? data['refresh_token'];
+        final username = data['username'];
+
+        if (access != null && refresh != null) {
+          await _storage.write(key: 'access_token', value: access);
+          await _storage.write(key: 'refresh_token', value: refresh);
+          _session.saveTokens(access: access, refresh: refresh);
+          if (username != null) _session.username = username;
+          log('AuthRepository: Tokens saved successfully');
+        } else {
+          log('AuthRepository: No tokens found in response data');
+        }
+
         return right(unit);
       } else {
         return left(const MainFailure.authFailure());
@@ -191,6 +240,9 @@ class AuthRepository implements IAuthService {
       final response = await _dio.post('/users/logout');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await _storage.delete(key: 'access_token');
+        await _storage.delete(key: 'refresh_token');
+        _session.clear();
         return right(unit);
       } else {
         return left(const MainFailure.serverFailure());
@@ -206,6 +258,14 @@ class AuthRepository implements IAuthService {
       final response = await _dio.post('/users/refresh-access-token');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data['data'];
+        final access = data['accessToken'];
+        final refresh = data['refreshToken'];
+
+        await _storage.write(key: 'access_token', value: access);
+        await _storage.write(key: 'refresh_token', value: refresh);
+        _session.saveTokens(access: access, refresh: refresh);
+        
         return right(unit);
       } else {
         return left(const MainFailure.authFailure());

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +7,12 @@ import 'package:qflow/application/profile/profile_state.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
+import 'package:qflow/application/appointment/appointment_cubit.dart';
+import 'package:qflow/application/appointment/appointment_state.dart';
+import 'package:qflow/domain/auth/auth_service.dart';
+import 'package:qflow/Presentation/Auth/sign_in.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,14 +27,34 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
   bool _isEditMode = false;
   late int _currentIndex;
   var date = DateTime.now();
+
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController usernameController;
+  late TextEditingController ageController;
+  late TextEditingController weightController;
+  late TextEditingController heightController;
+  late TextEditingController contactNumberController;
+
+  String? selectedGender;
+  String? selectedBloodGroup;
+
   @override
   void initState() {
     super.initState();
-    _currentIndex = _originalTabs.length; // Start at the middle of the list
+    _currentIndex = _originalTabs.length; 
     _pageController = PageController(
       initialPage: _currentIndex,
-      viewportFraction: 0.31, // Show 3 items with spacing
+      viewportFraction: 0.31,
     );
+
+    firstNameController = TextEditingController();
+    lastNameController = TextEditingController();
+    usernameController = TextEditingController();
+    ageController = TextEditingController();
+    weightController = TextEditingController();
+    heightController = TextEditingController();
+    contactNumberController = TextEditingController();
   }
 
   void _toggleEditMode() {
@@ -58,6 +85,13 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
+    usernameController.dispose();
+    ageController.dispose();
+    weightController.dispose();
+    heightController.dispose();
+    contactNumberController.dispose();
     super.dispose();
   }
 
@@ -321,7 +355,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                                                                 0xFFE1E1E1),
                                                           ),
                                                         ),
-                                                        child: Text('Remove',
+                                                        child: Text('Coming Soon',
                                                             style: TextStyle(
                                                               fontSize: 9.sp,
                                                               fontWeight:
@@ -374,156 +408,170 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                                                 horizontal: 31.w),
                                             child: Column(
                                               children: [
-                                                ListView.separated(
-                                                    shrinkWrap: true,
-                                                    physics:
-                                                        const NeverScrollableScrollPhysics(),
-                                                    itemBuilder:
-                                                        (context, index) {
-                                                      return Container(
-                                                        width: 350.w,
-                                                        height: 182.h,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient: const LinearGradient(
-                                                              colors: [
-                                                                Color.fromRGBO(
-                                                                    245,
-                                                                    246,
-                                                                    250,
-                                                                    1),
-                                                                Color.fromRGBO(
-                                                                    245,
-                                                                    246,
-                                                                    250,
-                                                                    1),
-                                                              ],
-                                                              begin: Alignment
-                                                                  .topCenter,
-                                                              end: Alignment
-                                                                  .bottomCenter),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                      13.r),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              EdgeInsets.only(
-                                                                  left: 20.w),
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceEvenly,
-                                                            children: [
-                                                              Stack(
-                                                                alignment:
-                                                                    AlignmentDirectional
-                                                                        .bottomStart,
+                                                BlocBuilder<AppointmentCubit,
+                                                    AppointmentState>(
+                                                  builder: (context, appState) {
+                                                    if (appState.isLoading) {
+                                                      return const Center(
+                                                          child:
+                                                              CircularProgressIndicator());
+                                                    }
+                                                    if (appState
+                                                        .pastAppointments
+                                                        .isEmpty) {
+                                                      return const Center(
+                                                          child: Padding(
+                                                        padding: EdgeInsets.only(
+                                                            top: 50),
+                                                        child: Text(
+                                                            'No past appointments'),
+                                                      ));
+                                                    }
+                                                    return ListView.separated(
+                                                        shrinkWrap: true,
+                                                        physics:
+                                                            const NeverScrollableScrollPhysics(),
+                                                        itemBuilder:
+                                                            (context, index) {
+                                                          final app = appState
+                                                                  .pastAppointments[
+                                                              index];
+                                                          final appDate =
+                                                              DateTime.tryParse(app
+                                                                      .appointmentDate) ??
+                                                                  DateTime.now();
+                                                          return Container(
+                                                            width: 350.w,
+                                                            height: 182.h,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: const Color
+                                                                  .fromRGBO(
+                                                                  245,
+                                                                  246,
+                                                                  250,
+                                                                  1),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          13.r),
+                                                            ),
+                                                            child: Padding(
+                                                              padding:
+                                                                  EdgeInsets.only(
+                                                                      left: 20.w),
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .min,
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceEvenly,
                                                                 children: [
-                                                                  Container(
-                                                                    height:
-                                                                        65.h,
-                                                                  ),
-                                                                  Positioned(
-                                                                    top: -8,
-                                                                    child: Row(
-                                                                      mainAxisSize:
-                                                                          MainAxisSize
-                                                                              .min,
-                                                                      crossAxisAlignment:
-                                                                          CrossAxisAlignment
-                                                                              .start,
-                                                                      children: [
-                                                                        Text(
-                                                                            date.day
-                                                                                .toString(),
-                                                                            style:
-                                                                                TextStyle(
-                                                                              fontSize: 36.sp,
-                                                                              fontWeight: FontWeight.w400,
-                                                                              color: const Color.fromRGBO(73, 142, 167, 1),
-                                                                            )),
-                                                                        kwidth5,
-                                                                        Padding(
-                                                                          padding:
-                                                                              EdgeInsets.only(top: 7.h),
-                                                                          child: Text(
-                                                                              formatDateWithSuffix(date),
-                                                                              style: TextStyle(
-                                                                                fontSize: 14.4.sp,
-                                                                                fontWeight: FontWeight.w400,
-                                                                                color: Colors.black,
-                                                                              )),
+                                                                  Stack(
+                                                                    alignment:
+                                                                        AlignmentDirectional
+                                                                            .bottomStart,
+                                                                    children: [
+                                                                      Container(
+                                                                        height:
+                                                                            65.h,
+                                                                      ),
+                                                                      Positioned(
+                                                                        top: -8,
+                                                                        child:
+                                                                            Row(
+                                                                          mainAxisSize:
+                                                                              MainAxisSize.min,
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            Text(
+                                                                                appDate.day.toString(),
+                                                                                style: TextStyle(
+                                                                                  fontSize: 36.sp,
+                                                                                  fontWeight: FontWeight.w400,
+                                                                                  color: const Color.fromRGBO(73, 142, 167, 1),
+                                                                                )),
+                                                                            kwidth5,
+                                                                            Padding(
+                                                                              padding: EdgeInsets.only(top: 7.h),
+                                                                              child: Text(
+                                                                                  formatDateWithSuffix(appDate),
+                                                                                  style: TextStyle(
+                                                                                    fontSize: 14.4.sp,
+                                                                                    fontWeight: FontWeight.w400,
+                                                                                    color: Colors.black,
+                                                                                  )),
+                                                                            ),
+                                                                          ],
                                                                         ),
-                                                                      ],
-                                                                    ),
+                                                                      ),
+                                                                      Text(
+                                                                          '${getMonth(appDate.month)} ${appDate.year}',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                18.sp,
+                                                                            fontWeight:
+                                                                                FontWeight.w400,
+                                                                            color: Colors.black,
+                                                                          )),
+                                                                    ],
                                                                   ),
                                                                   Text(
-                                                                      '${getMonth(date.month)} ${date.year}',
+                                                                      'Department: ${app.departmentName}',
                                                                       style:
                                                                           TextStyle(
                                                                         fontSize:
-                                                                            18.sp,
+                                                                            9.sp,
                                                                         fontWeight:
-                                                                            FontWeight.w400,
+                                                                            FontWeight
+                                                                                .w400,
                                                                         color: Colors
                                                                             .black,
                                                                       )),
+                                                                  Text(
+                                                                      app.hospitalName,
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontSize:
+                                                                            10.sp,
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .w400,
+                                                                        color: Colors
+                                                                            .grey,
+                                                                      )),
+                                                                  Text(
+                                                                      app.patientName,
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontSize:
+                                                                            10.sp,
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .w400,
+                                                                        color: Colors
+                                                                            .grey,
+                                                                      )),
                                                                 ],
                                                               ),
-                                                              Text(
-                                                                  'Department: ENT',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize:
-                                                                        9.sp,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
-                                                                    color: Colors
-                                                                        .black,
-                                                                  )),
-                                                              Text(
-                                                                  'Govt.Hoapital Chengannur',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize:
-                                                                        10.sp,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  )),
-                                                              Text(
-                                                                  'Nidhin V Ninan',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize:
-                                                                        10.sp,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  )),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                    separatorBuilder:
-                                                        (context, index) {
-                                                      return kheight20;
-                                                    },
-                                                    itemCount: 5),
+                                                            ),
+                                                          );
+                                                        },
+                                                        separatorBuilder:
+                                                            (context, index) {
+                                                          return kheight20;
+                                                        },
+                                                        itemCount: appState
+                                                            .pastAppointments
+                                                            .length);
+                                                  },
+                                                ),
                                                 SizedBox(height: 150.h),
                                               ],
                                             ),
@@ -531,7 +579,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                                         )
                                       : _isEditMode
                                           ? _buildEditUI(
-                                              _toggleEditMode, context, user)
+                                              _toggleEditMode, context, user, state)
                                           : _buildAvatarTab(
                                               _toggleEditMode, user),
                             ),
@@ -595,19 +643,25 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 20.h),
           Row(
             children: [
-              Container(
+              SizedBox(
                 width: 77.w,
                 height: 90.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  shape: BoxShape.rectangle,
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(14.r),
-                  image: user.profileImageUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(user.profileImageUrl!),
+                  child: user.profileImageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: user.profileImageUrl!,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => user.thumbnailUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: user.thumbnailUrl!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(color: Colors.grey),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                         )
-                      : null,
+                      : Container(color: Colors.grey),
                 ),
               ),
               kwidth5,
@@ -722,7 +776,14 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           ),
           kheight20,
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              getIt<IAuthService>().logout().then((_) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInScreen()),
+                  (route) => false,
+                );
+              });
+            },
             style: ElevatedButton.styleFrom(
               minimumSize: Size(325.w, 41.h),
               backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
@@ -753,15 +814,17 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditUI(Function() onTap, BuildContext context, UserModel user) {
-    final nameController =
-        TextEditingController(text: "${user.firstName} ${user.lastName}");
-    final ageController = TextEditingController(text: user.age.toString());
-    final weightController =
-        TextEditingController(text: user.weight.toString());
-    final heightController =
-        TextEditingController(text: user.height.toString());
-    final bloodGroupController = TextEditingController(text: user.bloodGroup);
+  Widget _buildEditUI(Function() onTap, BuildContext context, UserModel user,
+      ProfileState state) {
+    firstNameController.text = user.firstName;
+    lastNameController.text = user.lastName;
+    usernameController.text = user.username;
+    ageController.text = user.age.toString();
+    weightController.text = user.weight.toString();
+    heightController.text = user.height.toString();
+    contactNumberController.text = user.contactNumber;
+    selectedGender ??= user.gender.isNotEmpty ? user.gender[0].toUpperCase() + user.gender.substring(1).toLowerCase() : 'Male';
+    selectedBloodGroup ??= user.bloodGroup.isNotEmpty ? user.bloodGroup : 'O+';
 
     return SingleChildScrollView(
       child: Padding(
@@ -781,16 +844,28 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                     Container(
                       width: 69.w,
                       height: 69.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        shape: BoxShape.rectangle,
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(14.r),
-                        image: user.profileImageUrl != null
-                            ? DecorationImage(
-                                image: NetworkImage(user.profileImageUrl!),
+                        child: state.profileImagePath != null
+                            ? Image.file(
+                                File(state.profileImagePath!),
                                 fit: BoxFit.cover,
                               )
-                            : null,
+                            : user.profileImageUrl != null
+                                ? CachedNetworkImage(
+                                    imageUrl: user.profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) =>
+                                        user.thumbnailUrl != null
+                                            ? CachedNetworkImage(
+                                                imageUrl: user.thumbnailUrl!,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Container(color: Colors.grey),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
+                                  )
+                                : Container(color: Colors.grey),
                       ),
                     ),
                     Positioned(
@@ -804,7 +879,20 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                           color: Color(0xFFE1E1E1),
                         ),
                         child: GestureDetector(
-                          onTap: () {},
+                          onTap: () async {
+                            final picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 50,
+                            );
+                            if (image != null) {
+                              if (context.mounted) {
+                                context
+                                    .read<ProfileCubit>()
+                                    .profileImageChanged(image.path);
+                              }
+                            }
+                          },
                           child: Icon(
                             Icons.edit,
                             size: 14.sp,
@@ -835,13 +923,12 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        final nameParts = nameController.text.split(' ');
                         context.read<ProfileCubit>().updateProfile(
                               user: user.copyWith(
-                                firstName:
-                                    nameParts.isNotEmpty ? nameParts[0] : '',
-                                lastName:
-                                    nameParts.length > 1 ? nameParts[1] : '',
+                                firstName: firstNameController.text,
+                                lastName: lastNameController.text,
+                                username: usernameController.text,
+                                contactNumber: contactNumberController.text,
                                 age: int.tryParse(ageController.text) ??
                                     user.age,
                                 weight:
@@ -850,7 +937,9 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                                 height:
                                     double.tryParse(heightController.text) ??
                                         user.height,
-                                bloodGroup: bloodGroupController.text,
+                                gender: selectedGender?.toLowerCase() ??
+                                    user.gender,
+                                bloodGroup: selectedBloodGroup ?? user.bloodGroup,
                               ),
                             );
                       },
@@ -874,21 +963,54 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             kheight20,
-            _buildEditableField("Name", nameController),
-            kheight20,
-            _buildEditableField("Age", ageController),
+            _buildEditableField("Username", usernameController),
             kheight20,
             Row(
               children: [
                 Expanded(
-                    child: _buildEditableField("Weight", weightController)),
+                    child: _buildEditableField("First Name", firstNameController)),
                 SizedBox(width: 10.w),
                 Expanded(
-                    child: _buildEditableField("Height", heightController)),
+                    child: _buildEditableField("Last Name", lastNameController)),
               ],
             ),
             kheight20,
-            _buildEditableField("Blood Group", bloodGroupController),
+            _buildEditableField("Contact Number", contactNumberController,
+                keyboardType: TextInputType.phone),
+            kheight20,
+            Row(
+              children: [
+                Expanded(child: _buildEditableField("Age", ageController, keyboardType: TextInputType.number)),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: _buildDropdownField(
+                    label: "Gender",
+                    value: selectedGender!,
+                    items: ["Male", "Female", "Other"],
+                    onChanged: (val) => setState(() => selectedGender = val),
+                  ),
+                ),
+              ],
+            ),
+            kheight20,
+            Row(
+              children: [
+                Expanded(
+                    child: _buildEditableField("Weight", weightController,
+                        keyboardType: TextInputType.number)),
+                SizedBox(width: 10.w),
+                Expanded(
+                    child: _buildEditableField("Height", heightController,
+                        keyboardType: TextInputType.number)),
+              ],
+            ),
+            kheight20,
+            _buildDropdownField(
+              label: "Blood Group",
+              value: selectedBloodGroup!,
+              items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+              onChanged: (val) => setState(() => selectedBloodGroup = val),
+            ),
             SizedBox(height: 100.h),
           ],
         ),
@@ -896,7 +1018,8 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditableField(String label, TextEditingController controller) {
+  Widget _buildEditableField(String label, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text}) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 0.h),
       child: Column(
@@ -911,6 +1034,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
             height: 35.h,
             child: TextFormField(
               controller: controller,
+              keyboardType: keyboardType,
               style: TextStyle(
                   fontSize: 10.sp,
                   fontWeight: FontWeight.w400,
@@ -927,6 +1051,46 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w400),
+        ),
+        SizedBox(height: 1.h),
+        SizedBox(
+          height: 35.h,
+          child: DropdownButtonFormField<String>(
+            value: value,
+            style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w400,
+                color: const Color.fromRGBO(116, 116, 116, 1)),
+            decoration: InputDecoration(
+              fillColor: const Color.fromRGBO(248, 248, 248, 1),
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 10.w),
+            ),
+            items: items
+                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                .toList(),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
     );
   }
 }

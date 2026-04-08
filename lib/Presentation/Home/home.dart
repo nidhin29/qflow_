@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:qflow/application/appointment/appointment_cubit.dart';
+import 'package:qflow/application/appointment/appointment_state.dart';
+import 'package:qflow/application/profile/profile_cubit.dart';
+import 'package:qflow/application/profile/profile_state.dart';
 import 'package:qflow/constants/const.dart';
+import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -39,12 +45,20 @@ class HomeScreen extends StatelessWidget {
                           fontWeight: FontWeight.w400,
                         ),
                       ),
-                      Text(
-                        'Nidhin',
-                        style: TextStyle(
-                          fontSize: 21.45.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
+                      BlocBuilder<ProfileCubit, ProfileState>(
+                        builder: (context, state) {
+                          final userName = state.userOption.fold(
+                            () => 'User',
+                            (user) => '${user.firstName} ${user.lastName}',
+                          );
+                          return Text(
+                            userName,
+                            style: TextStyle(
+                              fontSize: 21.45.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -128,41 +142,56 @@ class HomeScreen extends StatelessWidget {
                   ))),
               kheight20,
               // Sliding Carousel
-              SizedBox(
-                height: 320.h,
-                child: PageView.builder(
-                  controller: pageController,
-                  itemCount: 5,
-                  onPageChanged: (index) {
-                    currentPageNotifier.value = index;
-                  },
-                  itemBuilder: (context, index) => _buildCard(),
-                ),
+              BlocBuilder<AppointmentCubit, AppointmentState>(
+                builder: (context, state) {
+                  if (state.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state.upcomingAppointments.isEmpty) {
+                    return const Center(child: Text('No upcoming appointments'));
+                  }
+                  return SizedBox(
+                    height: 320.h,
+                    child: PageView.builder(
+                      controller: pageController,
+                      itemCount: state.upcomingAppointments.length,
+                      onPageChanged: (index) {
+                        currentPageNotifier.value = index;
+                      },
+                      itemBuilder: (context, index) =>
+                          _buildCard(state.upcomingAppointments[index]),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
               // Page Indicator using ValueListenableBuilder
               Center(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: currentPageNotifier,
-                  builder: (context, currentPage, _) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(5, (index) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 5),
-                          width: currentPage == index ? 60 : 25,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: currentPage == index
-                                ? const Color.fromRGBO(147, 147, 147, 1)
-                                // ignore: deprecated_member_use
-                                : const Color.fromRGBO(230, 230, 230, 1),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
+                child: BlocBuilder<AppointmentCubit, AppointmentState>(
+                  builder: (context, state) {
+                    return ValueListenableBuilder<int>(
+                      valueListenable: currentPageNotifier,
+                      builder: (context, currentPage, _) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                              state.upcomingAppointments.length, (index) {
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              width: currentPage == index ? 60 : 25,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: currentPage == index
+                                    ? const Color.fromRGBO(147, 147, 147, 1)
+                                    : const Color.fromRGBO(230, 230, 230, 1),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            );
+                          }),
                         );
-                      }),
+                      },
                     );
                   },
                 ),
@@ -176,10 +205,17 @@ class HomeScreen extends StatelessWidget {
                     color: const Color.fromRGBO(125, 125, 125, 1),
                   ))),
 
-              ListView.separated(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) => Padding(
+              BlocBuilder<AppointmentCubit, AppointmentState>(
+                builder: (context, state) {
+                  if (state.isLoading && state.pastAppointments.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      final appointment = state.pastAppointments[index];
+                      return Padding(
                         padding: EdgeInsets.only(right: 20.h),
                         child: Container(
                           width: 348.w,
@@ -209,7 +245,7 @@ class HomeScreen extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Dr. KM Cherian Institute of Medical Science',
+                                        appointment.hospitalName,
                                         style: GoogleFonts.poppins(
                                           textStyle: TextStyle(
                                             fontSize: 15.sp,
@@ -219,7 +255,9 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        '${DateFormat('d').format(DateTime.now())}${DateTime.now().day == 1 || DateTime.now().day == 21 || DateTime.now().day == 31 ? 'st' : DateTime.now().day == 2 || DateTime.now().day == 22 ? 'nd' : DateTime.now().day == 3 || DateTime.now().day == 23 ? 'rd' : 'th'} ${DateFormat('MMM y').format(DateTime.now())}',
+                                        DateFormat('d MMM y').format(
+                                            DateTime.parse(
+                                                appointment.appointmentDate)),
                                         style: TextStyle(
                                           fontSize: 13.sp,
                                           fontFamily: 'CabinetGrotesk',
@@ -227,7 +265,7 @@ class HomeScreen extends StatelessWidget {
                                           color: Colors.black,
                                         ),
                                       ),
-                                      Text('Nidhin V Ninan',
+                                      Text(appointment.patientName,
                                           style: GoogleFonts.poppins(
                                               textStyle: TextStyle(
                                             fontWeight: FontWeight.w400,
@@ -242,9 +280,13 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                      ),
-                  separatorBuilder: (context, index) => kheight20,
-                  itemCount: 5),
+                      );
+                    },
+                    separatorBuilder: (context, index) => kheight20,
+                    itemCount: state.pastAppointments.length,
+                  );
+                },
+              ),
               kheight20,
               kheight20,
               kheight20,
@@ -257,7 +299,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Card Builder for Carousel
-  Widget _buildCard() {
+  Widget _buildCard(AppointmentModel appointment) {
     return Container(
       width: 318.w,
       height: 320.h,
@@ -307,7 +349,8 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${DateFormat('d').format(DateTime.now())}${DateTime.now().day == 1 || DateTime.now().day == 21 || DateTime.now().day == 31 ? 'st' : DateTime.now().day == 2 || DateTime.now().day == 22 ? 'nd' : DateTime.now().day == 3 || DateTime.now().day == 23 ? 'rd' : 'th'} ${DateFormat(' MMM').format(DateTime.now())}',
+                          DateFormat('d MMM').format(
+                              DateTime.parse(appointment.appointmentDate)),
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontFamily: 'CabinetGrotesk',
@@ -316,7 +359,8 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          DateFormat('y').format(DateTime.now()),
+                          DateFormat('y').format(
+                              DateTime.parse(appointment.appointmentDate)),
                           style: TextStyle(
                             fontSize: 24.sp,
                             fontFamily: 'CabinetGrotesk',
@@ -330,7 +374,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 kheight5,
                 Text(
-                  'Dr. KM Cherian Insitute of Medical Science',
+                  appointment.hospitalName,
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontFamily: 'CabinetGrotesk',
@@ -339,7 +383,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 kheight5,
-                Text('Kallishery,Alappuzha',
+                Text(appointment.hospitalAddress,
                     style: GoogleFonts.dmSans(
                         textStyle: TextStyle(
                       fontWeight: FontWeight.w400,
@@ -347,12 +391,12 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.black,
                     ))),
                 kheight5,
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     BookTileWidget(
                       heading: 'Estimated Time',
-                      content: '10:00 - 10:30',
+                      content: appointment.estimatedTime,
                     ),
                     kwidth5,
                     kwidth5,
@@ -363,18 +407,19 @@ class HomeScreen extends StatelessWidget {
                     kwidth5,
                     kwidth5,
                     BookTileWidget(
-                        heading: 'OP Ticket Number', content: '#123456'),
+                        heading: 'OP Ticket Number',
+                        content: '#${appointment.tokenNumber}'),
                     kwidth5,
                     kwidth5,
                   ],
                 ),
                 kheight5,
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     BookTileWidget(
                       heading: 'Patient',
-                      content: 'Nidhin V Ninan',
+                      content: appointment.patientName,
                     ),
                     kwidth5,
                     kwidth5,
@@ -384,7 +429,9 @@ class HomeScreen extends StatelessWidget {
                     kwidth5,
                     kwidth5,
                     kwidth5,
-                    BookTileWidget(heading: 'Department', content: 'Physician'),
+                    BookTileWidget(
+                        heading: 'Department',
+                        content: appointment.departmentName),
                     kwidth5,
                     kwidth5,
                     kwidth5,

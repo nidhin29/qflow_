@@ -1,19 +1,20 @@
 import 'package:dartz/dartz.dart';
+import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/domain/core/failures.dart';
 
 abstract class IAuthService {
-  Future<Either<MainFailure, Unit>> registerWithEmailAndPassword({
+  Future<Either<MainFailure, AuthSuccess>> registerWithEmailAndPassword({
     required String emailAddress,
     required String password,
     required String fullName,
   });
 
-  Future<Either<MainFailure, Unit>> signInWithEmailAndPassword({
+  Future<Either<MainFailure, AuthSuccess>> signInWithEmailAndPassword({
     required String emailAddress,
     required String password,
   });
 
-  Future<Either<MainFailure, Unit>> signInWithGoogle();
+  Future<Either<MainFailure, AuthSuccess>> signInWithGoogle();
   
   Future<Either<MainFailure, Unit>> sendOtp({required String email});
   

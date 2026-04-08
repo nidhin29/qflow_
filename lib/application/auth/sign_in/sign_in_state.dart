@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/domain/core/failures.dart';
 
 class SignInState {
@@ -6,7 +7,7 @@ class SignInState {
   final String password;
   final bool isSubmitting;
   final bool showErrorMessages;
-  final Option<Either<MainFailure, Unit>> authFailureOrSuccessOption;
+  final Option<Either<MainFailure, AuthSuccess>> authFailureOrSuccessOption;
 
   const SignInState({
     required this.emailAddress,
@@ -34,7 +35,7 @@ class SignInState {
     String? password,
     bool? isSubmitting,
     bool? showErrorMessages,
-    Option<Either<MainFailure, Unit>>? authFailureOrSuccessOption,
+    Option<Either<MainFailure, AuthSuccess>>? authFailureOrSuccessOption,
   }) {
     return SignInState(
       emailAddress: emailAddress ?? this.emailAddress,

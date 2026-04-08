@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:qflow/Presentation/Home/home.dart';
 import 'package:qflow/Presentation/Member/member.dart';
 import 'package:qflow/Presentation/Profile/profile.dart';
+import 'package:qflow/application/appointment/appointment_cubit.dart';
+import 'package:qflow/application/profile/profile_cubit.dart';
+import 'package:qflow/domain/core/di/injection.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -10,33 +14,46 @@ class MainScreen extends StatelessWidget {
   static final ValueNotifier<int> _selectedIndexNotifier =
       ValueNotifier<int>(0);
   static final PageController _pageController = PageController();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              _selectedIndexNotifier.value = index;
-            },
-            children:const [
-               HomeScreen(),
-              MemberScreen(),
-               ProfileScreen(),
-            ],
-          ),
-          Positioned(
-            bottom: 15.h,
-            left: 0,
-            right: 0,
-            child: CustomNavBar(
-              selectedIndexNotifier: _selectedIndexNotifier,
-              pageController: _pageController,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => getIt<AppointmentCubit>()
+            ..getUpcomingAppointments()
+            ..getPastAppointments(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<ProfileCubit>()..getUserDetails(),
+        ),
+      ],
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                _selectedIndexNotifier.value = index;
+              },
+              children: const [
+                HomeScreen(),
+                MemberScreen(),
+                ProfileScreen(),
+              ],
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 15.h,
+              left: 0,
+              right: 0,
+              child: CustomNavBar(
+                selectedIndexNotifier: _selectedIndexNotifier,
+                pageController: _pageController,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

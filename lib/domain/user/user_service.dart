@@ -7,7 +7,7 @@ abstract class IUserService {
 
   Future<Either<MainFailure, Unit>> registerUserDetails({
     required UserModel user,
-    required String profileImagePath,
+    String? profileImagePath,
   });
 
   Future<Either<MainFailure, Unit>> updateUserDetails({

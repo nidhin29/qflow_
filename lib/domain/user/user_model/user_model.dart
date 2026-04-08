@@ -11,6 +11,7 @@ class UserModel {
   final String bloodGroup;
   final String contactNumber;
   final String? profileImageUrl;
+  final String? thumbnailUrl;
 
   const UserModel({
     required this.firstName,
@@ -23,25 +24,28 @@ class UserModel {
     required this.bloodGroup,
     required this.contactNumber,
     this.profileImageUrl,
+    this.thumbnailUrl,
   });
 
   @override
   String toString() {
-    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, profileImageUrl: $profileImageUrl)';
+    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, profileImageUrl: $profileImageUrl, thumbnailUrl: $thumbnailUrl)';
   }
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
     return UserModel(
-      firstName: data['first_name'] ?? data['firstName'] ?? '',
-      lastName: data['last_name'] ?? data['lastName'] ?? '',
-      username: data['username'] ?? '',
+      firstName: (data['first_name'] ?? data['firstName'] ?? '').toString(),
+      lastName: (data['last_name'] ?? data['lastName'] ?? '').toString(),
+      username: (data['username'] ?? '').toString(),
       age: data['age'] ?? 0,
       weight: (data['weight'] as num?)?.toDouble() ?? 0.0,
       height: (data['height'] as num?)?.toDouble() ?? 0.0,
-      gender: data['gender'] ?? '',
-      bloodGroup: data['blood_group'] ?? data['bloodGroup'] ?? '',
-      contactNumber: data['contact_number'] ?? data['contactNumber'] ?? '',
+      gender: (data['gender'] ?? '').toString(),
+      bloodGroup: (data['blood_group'] ?? data['bloodGroup'] ?? '').toString(),
+      contactNumber:
+          (data['contact_number'] ?? data['contactNumber'] ?? '').toString(),
       profileImageUrl: data['profile_image'] ?? data['profileImageUrl'],
+      thumbnailUrl: data['thumbnail_url'] ?? data['thumbnailUrl'],
     );
   }
 
@@ -57,6 +61,7 @@ class UserModel {
       'blood_group': bloodGroup,
       'contact_number': contactNumber,
       'profile_image': profileImageUrl,
+      'thumbnail_url': thumbnailUrl,
     };
   }
 
@@ -79,6 +84,7 @@ class UserModel {
     String? bloodGroup,
     String? contactNumber,
     String? profileImageUrl,
+    String? thumbnailUrl,
   }) {
     return UserModel(
       firstName: firstName ?? this.firstName,
@@ -91,6 +97,7 @@ class UserModel {
       bloodGroup: bloodGroup ?? this.bloodGroup,
       contactNumber: contactNumber ?? this.contactNumber,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 }

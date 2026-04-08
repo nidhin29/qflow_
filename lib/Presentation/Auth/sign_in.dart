@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:qflow/Presentation/Auth/register_details.dart';
 import 'package:qflow/Presentation/Auth/sign_up.dart';
 import 'package:qflow/Presentation/Home/mainscreen.dart';
 import 'package:qflow/application/auth/sign_in/sign_in_cubit.dart';
 import 'package:qflow/application/auth/sign_in/sign_in_state.dart';
+import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
+
+  @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  bool _isPasswordObscured = true;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +34,17 @@ class SignInScreen extends StatelessWidget {
                   const SnackBar(content: Text('Authentication Failed')),
                 );
               },
-              (_) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const MainScreen()),
-                );
+              (successType) {
+                if (successType == AuthSuccess.incomplete) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (context) => const RegisterDetailsScreen()),
+                  );
+                } else {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const MainScreen()),
+                  );
+                }
               },
             ),
           );
@@ -84,6 +100,19 @@ class SignInScreen extends StatelessWidget {
                             fontSize: 12.sp,
                             color: Colors.black,
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordObscured
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.black,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordObscured = !_isPasswordObscured;
+                              });
+                            },
+                          ),
                           focusedBorder: OutlineInputBorder(
                             borderSide: const BorderSide(color: Colors.black),
                             borderRadius: BorderRadius.circular(9.84.r),
@@ -93,7 +122,7 @@ class SignInScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9.84.r),
                           ),
                         ),
-                        obscureText: true,
+                        obscureText: _isPasswordObscured,
                         onChanged: (value) =>
                             context.read<SignInCubit>().passwordChanged(value),
                       ),

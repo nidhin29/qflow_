@@ -1,0 +1,1 @@
+enum AuthSuccess { complete, incomplete }

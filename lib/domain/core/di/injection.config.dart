@@ -13,10 +13,19 @@ import 'package:dio/dio.dart' as _i361;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:qflow/application/appointment/appointment_cubit.dart' as _i397;
+import 'package:qflow/application/auth/otp/otp_cubit.dart' as _i226;
+import 'package:qflow/application/auth/register_details/register_details_cubit.dart'
+    as _i1028;
 import 'package:qflow/application/auth/sign_in/sign_in_cubit.dart' as _i466;
+import 'package:qflow/application/auth/sign_up/sign_up_cubit.dart' as _i871;
 import 'package:qflow/application/profile/profile_cubit.dart' as _i1045;
+import 'package:qflow/domain/appointment/appointment_service.dart' as _i280;
+import 'package:qflow/domain/auth/app_session.dart' as _i218;
 import 'package:qflow/domain/auth/auth_service.dart' as _i116;
 import 'package:qflow/domain/user/user_service.dart' as _i418;
+import 'package:qflow/infrastructure/appointment/appointment_repository.dart'
+    as _i800;
 import 'package:qflow/infrastructure/auth/auth_repository.dart' as _i736;
 import 'package:qflow/infrastructure/core/network_module.dart' as _i844;
 import 'package:qflow/infrastructure/user/user_repository.dart' as _i295;
@@ -33,17 +42,33 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     final networkModule = _$NetworkModule();
+    gh.lazySingleton<_i218.AppSession>(() => _i218.AppSession());
     gh.lazySingleton<_i558.FlutterSecureStorage>(
         () => networkModule.secureStorage);
-    gh.lazySingleton<_i361.Dio>(() => networkModule.dio);
-    gh.factory<_i466.SignInCubit>(
-        () => _i466.SignInCubit(gh<_i116.IAuthService>()));
-    gh.lazySingleton<_i418.IUserService>(
-        () => _i295.UserRepository(gh<_i361.Dio>()));
-    gh.lazySingleton<_i116.IAuthService>(
-        () => _i736.AuthRepository(gh<_i361.Dio>()));
+    gh.lazySingleton<_i361.Dio>(
+        () => networkModule.dio(gh<_i218.AppSession>()));
+    gh.lazySingleton<_i116.IAuthService>(() => _i736.AuthRepository(
+          gh<_i361.Dio>(),
+          gh<_i558.FlutterSecureStorage>(),
+          gh<_i218.AppSession>(),
+        ));
+    gh.lazySingleton<_i280.IAppointmentService>(
+        () => _i800.AppointmentRepository(gh<_i361.Dio>()));
+    gh.lazySingleton<_i418.IUserService>(() => _i295.UserRepository(
+          gh<_i361.Dio>(),
+          gh<_i218.AppSession>(),
+        ));
+    gh.factory<_i397.AppointmentCubit>(
+        () => _i397.AppointmentCubit(gh<_i280.IAppointmentService>()));
+    gh.factory<_i1028.RegisterDetailsCubit>(
+        () => _i1028.RegisterDetailsCubit(gh<_i418.IUserService>()));
     gh.factory<_i1045.ProfileCubit>(
         () => _i1045.ProfileCubit(gh<_i418.IUserService>()));
+    gh.factory<_i226.OTPCubit>(() => _i226.OTPCubit(gh<_i116.IAuthService>()));
+    gh.factory<_i466.SignInCubit>(
+        () => _i466.SignInCubit(gh<_i116.IAuthService>()));
+    gh.factory<_i871.SignUpCubit>(
+        () => _i871.SignUpCubit(gh<_i116.IAuthService>()));
     return this;
   }
 }
