@@ -2,17 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:qflow/application/member/member_cubit.dart';
+import 'package:qflow/application/member/member_state.dart' as ms;
+import 'package:qflow/domain/member/member_model.dart';
 import 'package:qflow/application/profile/profile_cubit.dart';
 import 'package:qflow/application/profile/profile_state.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
-import 'package:qflow/application/appointment/appointment_cubit.dart';
-import 'package:qflow/application/appointment/appointment_state.dart';
 import 'package:qflow/domain/auth/auth_service.dart';
 import 'package:qflow/Presentation/Auth/sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qflow/Presentation/Profile/location_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,7 +44,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = _originalTabs.length; 
+    _currentIndex = _originalTabs.length;
     _pageController = PageController(
       initialPage: _currentIndex,
       viewportFraction: 0.31,
@@ -57,7 +59,21 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
     contactNumberController = TextEditingController();
   }
 
-  void _toggleEditMode() {
+  void _toggleEditMode(UserModel user) {
+    if (!_isEditMode) {
+      firstNameController.text = user.firstName;
+      lastNameController.text = user.lastName;
+      usernameController.text = user.username;
+      ageController.text = user.age.toString();
+      weightController.text = user.weight.toString();
+      heightController.text = user.height.toString();
+      contactNumberController.text = user.contactNumber;
+      selectedGender = user.gender.isNotEmpty
+          ? user.gender[0].toUpperCase() +
+              user.gender.substring(1).toLowerCase()
+          : 'Male';
+      selectedBloodGroup = user.bloodGroup.isNotEmpty ? user.bloodGroup : 'O+';
+    }
     setState(() {
       _isEditMode = !_isEditMode;
     });
@@ -80,6 +96,13 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
       duration: const Duration(milliseconds: 800),
       curve: Curves.easeInOut,
     );
+
+    // Call API for members only when switching to the Members tab (index 1)
+    if (targetIndex == 1) {
+      if (mounted) {
+        context.read<MemberCubit>().getMembers();
+      }
+    }
   }
 
   @override
@@ -97,39 +120,38 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => getIt<ProfileCubit>()..getUserDetails(),
-      child: BlocConsumer<ProfileCubit, ProfileState>(
-        listener: (context, state) {
-          state.failureOrSuccessOption.fold(
-            () => null,
-            (either) => either.fold(
-              (failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(failure.map(
-                      clientFailure: (_) => 'Network Error',
-                      serverFailure: (_) => 'Server Error',
-                      authFailure: (_) => 'Session Expired',
-                    )),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
-              (_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated successfully'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                setState(() => _isEditMode = false);
-              },
-            ),
-          );
-        },
+    return BlocConsumer<ProfileCubit, ProfileState>(
+      listener: (context, state) {
+        state.failureOrSuccessOption.fold(
+          () => null,
+          (either) => either.fold(
+            (failure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(failure.map(
+                    clientFailure: (_) => 'Network Error',
+                    serverFailure: (_) => 'Server Error',
+                    authFailure: (_) => 'Session Expired',
+                  )),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            (_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile updated successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              setState(() => _isEditMode = false);
+            },
+          ),
+        );
+      },
         builder: (context, state) {
-          final user = state.userOption.getOrElse(
+          final userOption = state.userOption;
+          final user = userOption.getOrElse(
             () => const UserModel(
               firstName: "Loading...",
               lastName: "",
@@ -140,6 +162,8 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
               gender: "",
               bloodGroup: "",
               contactNumber: "",
+              city: "",
+              district: "",
             ),
           );
 
@@ -252,336 +276,21 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                             ),
 
                             Flexible(
-                              child: _currentIndex % _originalTabs.length == 1
-                                  ? SingleChildScrollView(
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 31.w),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            ListView.separated(
-                                              shrinkWrap: true,
-                                              physics:
-                                                  const NeverScrollableScrollPhysics(),
-                                              itemBuilder: (context, index) {
-                                                return ListTile(
-                                                  leading: Container(
-                                                    width: 45.w,
-                                                    height: 45.h,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.grey,
-                                                      shape: BoxShape.rectangle,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              7.r),
-                                                    ),
-                                                  ),
-                                                  title: Text('Nidhin V Ninan',
-                                                      style: TextStyle(
-                                                        fontSize: 12.sp,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      )),
-                                                  subtitle: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      kheight5,
-                                                      Text('Age : 25',
-                                                          style: TextStyle(
-                                                            fontSize: 10.77.sp,
-                                                            fontWeight:
-                                                                FontWeight.w400,
-                                                          )),
-                                                    ],
-                                                  ),
-                                                  trailing: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                    children: [
-                                                      Container(
-                                                        width: 34.w,
-                                                        height: 20.h,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: const Color(
-                                                              0xFFE1E1E1),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                      10.r),
-                                                        ),
-                                                        child: GestureDetector(
-                                                          onTap: () {},
-                                                          child: Icon(
-                                                            Icons.edit,
-                                                            size: 14.sp,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      kwidth5,
-                                                      TextButton(
-                                                        onPressed: () {},
-                                                        style: ButtonStyle(
-                                                          padding:
-                                                              const WidgetStatePropertyAll(
-                                                                  EdgeInsets
-                                                                      .zero),
-                                                          minimumSize:
-                                                              WidgetStateProperty
-                                                                  .all(Size(
-                                                                      73.w,
-                                                                      20.h)),
-                                                          shape:
-                                                              WidgetStateProperty
-                                                                  .all(
-                                                            RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          19.r),
-                                                            ),
-                                                          ),
-                                                          backgroundColor:
-                                                              WidgetStateProperty
-                                                                  .all(
-                                                            const Color(
-                                                                0xFFE1E1E1),
-                                                          ),
-                                                        ),
-                                                        child: Text('Coming Soon',
-                                                            style: TextStyle(
-                                                              fontSize: 9.sp,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w400,
-                                                              color:
-                                                                  Colors.black,
-                                                            )),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              },
-                                              itemCount: 10,
-                                              separatorBuilder:
-                                                  (BuildContext context,
-                                                      int index) {
-                                                return const GradientDivider(
-                                                  thickness: 1.0,
-                                                );
-                                              },
-                                            ),
-                                            SizedBox(height: 10.h),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: TextButton(
-                                                onPressed: () {
-                                                  // Add more button action
-                                                },
-                                                child: Text('Add Member',
-                                                    style: TextStyle(
-                                                      fontSize: 9.sp,
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                      color: const Color(
-                                                          0xFFA4A4A4),
-                                                    )),
-                                              ),
-                                            ),
-                                            SizedBox(height: 100.h),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                  : _currentIndex % _originalTabs.length == 2
-                                      ? SingleChildScrollView(
-                                          child: Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 31.w),
-                                            child: Column(
-                                              children: [
-                                                BlocBuilder<AppointmentCubit,
-                                                    AppointmentState>(
-                                                  builder: (context, appState) {
-                                                    if (appState.isLoading) {
-                                                      return const Center(
-                                                          child:
-                                                              CircularProgressIndicator());
-                                                    }
-                                                    if (appState
-                                                        .pastAppointments
-                                                        .isEmpty) {
-                                                      return const Center(
-                                                          child: Padding(
-                                                        padding: EdgeInsets.only(
-                                                            top: 50),
-                                                        child: Text(
-                                                            'No past appointments'),
-                                                      ));
-                                                    }
-                                                    return ListView.separated(
-                                                        shrinkWrap: true,
-                                                        physics:
-                                                            const NeverScrollableScrollPhysics(),
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final app = appState
-                                                                  .pastAppointments[
-                                                              index];
-                                                          final appDate =
-                                                              DateTime.tryParse(app
-                                                                      .appointmentDate) ??
-                                                                  DateTime.now();
-                                                          return Container(
-                                                            width: 350.w,
-                                                            height: 182.h,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: const Color
-                                                                  .fromRGBO(
-                                                                  245,
-                                                                  246,
-                                                                  250,
-                                                                  1),
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          13.r),
-                                                            ),
-                                                            child: Padding(
-                                                              padding:
-                                                                  EdgeInsets.only(
-                                                                      left: 20.w),
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                mainAxisSize:
-                                                                    MainAxisSize
-                                                                        .min,
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .spaceEvenly,
-                                                                children: [
-                                                                  Stack(
-                                                                    alignment:
-                                                                        AlignmentDirectional
-                                                                            .bottomStart,
-                                                                    children: [
-                                                                      Container(
-                                                                        height:
-                                                                            65.h,
-                                                                      ),
-                                                                      Positioned(
-                                                                        top: -8,
-                                                                        child:
-                                                                            Row(
-                                                                          mainAxisSize:
-                                                                              MainAxisSize.min,
-                                                                          crossAxisAlignment:
-                                                                              CrossAxisAlignment.start,
-                                                                          children: [
-                                                                            Text(
-                                                                                appDate.day.toString(),
-                                                                                style: TextStyle(
-                                                                                  fontSize: 36.sp,
-                                                                                  fontWeight: FontWeight.w400,
-                                                                                  color: const Color.fromRGBO(73, 142, 167, 1),
-                                                                                )),
-                                                                            kwidth5,
-                                                                            Padding(
-                                                                              padding: EdgeInsets.only(top: 7.h),
-                                                                              child: Text(
-                                                                                  formatDateWithSuffix(appDate),
-                                                                                  style: TextStyle(
-                                                                                    fontSize: 14.4.sp,
-                                                                                    fontWeight: FontWeight.w400,
-                                                                                    color: Colors.black,
-                                                                                  )),
-                                                                            ),
-                                                                          ],
-                                                                        ),
-                                                                      ),
-                                                                      Text(
-                                                                          '${getMonth(appDate.month)} ${appDate.year}',
-                                                                          style:
-                                                                              TextStyle(
-                                                                            fontSize:
-                                                                                18.sp,
-                                                                            fontWeight:
-                                                                                FontWeight.w400,
-                                                                            color: Colors.black,
-                                                                          )),
-                                                                    ],
-                                                                  ),
-                                                                  Text(
-                                                                      'Department: ${app.departmentName}',
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontSize:
-                                                                            9.sp,
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .w400,
-                                                                        color: Colors
-                                                                            .black,
-                                                                      )),
-                                                                  Text(
-                                                                      app.hospitalName,
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontSize:
-                                                                            10.sp,
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .w400,
-                                                                        color: Colors
-                                                                            .grey,
-                                                                      )),
-                                                                  Text(
-                                                                      app.patientName,
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontSize:
-                                                                            10.sp,
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .w400,
-                                                                        color: Colors
-                                                                            .grey,
-                                                                      )),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                        separatorBuilder:
-                                                            (context, index) {
-                                                          return kheight20;
-                                                        },
-                                                        itemCount: appState
-                                                            .pastAppointments
-                                                            .length);
-                                                  },
-                                                ),
-                                                SizedBox(height: 150.h),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : _isEditMode
-                                          ? _buildEditUI(
-                                              _toggleEditMode, context, user, state)
-                                          : _buildAvatarTab(
-                                              _toggleEditMode, user),
+                              child: _isEditMode
+                                  ? _buildEditUI(() => _toggleEditMode(user),
+                                      context, user, state)
+                                  : IndexedStack(
+                                      index: _currentIndex %
+                                          _originalTabs.length,
+                                      children: [
+                                        _buildAvatarTab(
+                                            () => _toggleEditMode(user), user),
+                                        _buildMemberTab(
+                                            () => _toggleEditMode(user), user),
+                                        _buildHistoryTab(
+                                            () => _toggleEditMode(user), user),
+                                      ],
+                                    ),
                             ),
                           ],
                         ),
@@ -590,8 +299,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                   ),
           );
         },
-      ),
-    );
+      );
   }
 
   String getOrdinalSuffix(int day) {
@@ -652,12 +360,13 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                       ? CachedNetworkImage(
                           imageUrl: user.profileImageUrl!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => user.thumbnailUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: user.thumbnailUrl!,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(color: Colors.grey),
+                          placeholder: (context, url) =>
+                              user.thumbnailUrl != null
+                                  ? CachedNetworkImage(
+                                      imageUrl: user.thumbnailUrl!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(color: Colors.grey),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error),
                         )
@@ -724,7 +433,17 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           kheight20,
           kheight10,
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<ProfileCubit>(),
+                    child: const LocationPage(),
+                  ),
+                ),
+              );
+            },
             style: ElevatedButton.styleFrom(
               minimumSize: Size(325.w, 41.h),
               backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
@@ -814,18 +533,98 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildMemberTab(Function() onTap, UserModel user) {
+    return BlocConsumer<MemberCubit, ms.MemberState>(
+      listener: (context, state) {
+        state.failureOrSuccessOption.fold(
+          () => null,
+          (either) => either.fold(
+            (failure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    failure.map(
+                      serverFailure: (_) => 'Server Error. Reverting changes...',
+                      clientFailure: (_) => 'Connection Error. Reverting changes...',
+                      authFailure: (_) => 'Authentication Error. Reverting changes...',
+                    ),
+                  ),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            },
+            (_) => null,
+          ),
+        );
+      },
+      builder: (context, state) {
+        if (state.isLoading && state.members.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              if (state.members.isEmpty)
+                SizedBox(
+                  height: 300.h,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline,
+                            size: 64.sp, color: Colors.grey[300]),
+                        SizedBox(height: 16.h),
+                        Text(
+                          "No family members added yet",
+                          style: TextStyle(
+                              color: Colors.grey[500], fontSize: 14.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 31.w),
+                  itemCount: state.members.length,
+                  separatorBuilder: (context, index) => const GradientDivider(
+                    thickness: 1.0,
+                  ),
+                  itemBuilder: (context, index) {
+                    final member = state.members[index];
+                    return _buildMemberCard(member);
+                  },
+                ),
+              SizedBox(height: 10.h),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextButton(
+                  onPressed: () => _showAddMemberSheet(context),
+                  child: Text('Add Member',
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFFA4A4A4),
+                      )),
+                ),
+              ),
+              SizedBox(height: 100.h), // Space for bottom navigation
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHistoryTab(Function() onTap, UserModel user) {
+    return const Center(child: Text("Appointment History (Coming Soon)"));
+  }
+
   Widget _buildEditUI(Function() onTap, BuildContext context, UserModel user,
       ProfileState state) {
-    firstNameController.text = user.firstName;
-    lastNameController.text = user.lastName;
-    usernameController.text = user.username;
-    ageController.text = user.age.toString();
-    weightController.text = user.weight.toString();
-    heightController.text = user.height.toString();
-    contactNumberController.text = user.contactNumber;
-    selectedGender ??= user.gender.isNotEmpty ? user.gender[0].toUpperCase() + user.gender.substring(1).toLowerCase() : 'Male';
-    selectedBloodGroup ??= user.bloodGroup.isNotEmpty ? user.bloodGroup : 'O+';
-
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(left: 29.w, right: 29.w, top: 20.h),
@@ -939,7 +738,8 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                                         user.height,
                                 gender: selectedGender?.toLowerCase() ??
                                     user.gender,
-                                bloodGroup: selectedBloodGroup ?? user.bloodGroup,
+                                bloodGroup:
+                                    selectedBloodGroup ?? user.bloodGroup,
                               ),
                             );
                       },
@@ -968,10 +768,12 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
             Row(
               children: [
                 Expanded(
-                    child: _buildEditableField("First Name", firstNameController)),
+                    child:
+                        _buildEditableField("First Name", firstNameController)),
                 SizedBox(width: 10.w),
                 Expanded(
-                    child: _buildEditableField("Last Name", lastNameController)),
+                    child:
+                        _buildEditableField("Last Name", lastNameController)),
               ],
             ),
             kheight20,
@@ -980,7 +782,9 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
             kheight20,
             Row(
               children: [
-                Expanded(child: _buildEditableField("Age", ageController, keyboardType: TextInputType.number)),
+                Expanded(
+                    child: _buildEditableField("Age", ageController,
+                        keyboardType: TextInputType.number)),
                 SizedBox(width: 10.w),
                 Expanded(
                   child: _buildDropdownField(
@@ -1091,6 +895,433 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMemberCard(MemberModel member) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(member.name,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w400,
+          )),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          kheight5,
+          Text('Age : ${member.age}',
+              style: TextStyle(
+                fontSize: 10.77.sp,
+                fontWeight: FontWeight.w400,
+              )),
+          if (member.weight != null || member.height != null)
+            Text(
+                '${member.weight != null ? "${member.weight} kg" : ""} ${member.height != null ? "| ${member.height} cm" : ""}',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w400,
+                )),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 34.w,
+            height: 20.h,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE1E1E1),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: GestureDetector(
+              onTap: () {
+                _showEditMemberSheet(context, member);
+              },
+              child: Icon(
+                Icons.edit,
+                size: 14.sp,
+              ),
+            ),
+          ),
+          kwidth5,
+          TextButton(
+            onPressed: () {
+              context.read<MemberCubit>().deleteMember(member.id ?? "");
+            },
+            style: ButtonStyle(
+              padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+              minimumSize: WidgetStateProperty.all(Size(73.w, 20.h)),
+              shape: WidgetStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(19.r),
+                ),
+              ),
+              backgroundColor: WidgetStateProperty.all(
+                const Color(0xFFE1E1E1),
+              ),
+            ),
+            child: Text('Delete',
+                style: TextStyle(
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.redAccent,
+                )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddMemberSheet(BuildContext context) {
+    final nameController = TextEditingController();
+    final ageController = TextEditingController();
+    final weightController = TextEditingController();
+    final heightController = TextEditingController();
+    String selectedRelation = 'Spouse';
+    String selectedGender = 'male';
+    String selectedBloodGroup = 'O+';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => BlocProvider.value(
+        value: context.read<MemberCubit>(),
+        child: StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30.r)),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 29.w, vertical: 25.h),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20.h),
+                  Text(
+                    "Add Family Member",
+                    style:
+                        TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 25.h),
+                  _buildEditableField("Full Name", nameController),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _buildEditableField("Age", ageController,
+                              keyboardType: TextInputType.number)),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Relationship",
+                          value: selectedRelation,
+                          items: [
+                            'Mother',
+                            'Father',
+                            'Spouse',
+                            'Child',
+                            'Parent',
+                            'Sibling',
+                            'Other'
+                          ],
+                          onChanged: (val) =>
+                              setModalState(() => selectedRelation = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Gender",
+                          value: selectedGender,
+                          items: ['male', 'female', 'other'],
+                          onChanged: (val) =>
+                              setModalState(() => selectedGender = val!),
+                        ),
+                      ),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Blood Group",
+                          value: selectedBloodGroup,
+                          items: [
+                            'A+',
+                            'A-',
+                            'B+',
+                            'B-',
+                            'AB+',
+                            'AB-',
+                            'O+',
+                            'O-'
+                          ],
+                          onChanged: (val) =>
+                              setModalState(() => selectedBloodGroup = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _buildEditableField("Weight (kg)", weightController,
+                              keyboardType: TextInputType.number)),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                          child: _buildEditableField("Height (cm)", heightController,
+                              keyboardType: TextInputType.number)),
+                    ],
+                  ),
+                  SizedBox(height: 40.h),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          final member = MemberModel(
+                            name: nameController.text,
+                            age: int.tryParse(ageController.text) ?? 0,
+                            gender: selectedGender,
+                            bloodGroup: selectedBloodGroup,
+                            relation: selectedRelation,
+                            weight: double.tryParse(weightController.text),
+                            height: double.tryParse(heightController.text),
+                          );
+                          context.read<MemberCubit>().addMember(member: member);
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 25.h),
+                          backgroundColor: Colors.greenAccent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r)),
+                        ),
+                        child: Text("Register Member",
+                            style: TextStyle(
+                                color: Colors.black, fontSize: 10.sp)),
+                      ),
+                      SizedBox(height: 12.h),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 25.h),
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r)),
+                        ),
+                        child: Text("Cancel",
+                            style: TextStyle(
+                                color: Colors.black, fontSize: 10.sp)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditMemberSheet(BuildContext context, MemberModel member) {
+    final nameController = TextEditingController(text: member.name);
+    final ageController = TextEditingController(text: member.age.toString());
+    final weightController =
+        TextEditingController(text: member.weight?.toString() ?? "");
+    final heightController =
+        TextEditingController(text: member.height?.toString() ?? "");
+
+    // Normalize relation to match dropdown items
+    final List<String> relationItems = [
+      'Mother',
+      'Father',
+      'Spouse',
+      'Child',
+      'Parent',
+      'Sibling',
+      'Other'
+    ];
+    String selectedRelation = relationItems.firstWhere(
+        (e) => e.toLowerCase() == member.relation.toLowerCase(),
+        orElse: () => 'Other');
+
+    String selectedGender = member.gender.toLowerCase();
+    if (!['male', 'female', 'other'].contains(selectedGender)) {
+      selectedGender = 'male';
+    }
+    String selectedBloodGroup = member.bloodGroup.isNotEmpty ? member.bloodGroup : 'O+';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => BlocProvider.value(
+        value: context.read<MemberCubit>(),
+        child: StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30.r)),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 29.w, vertical: 25.h),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20.h),
+                  Text(
+                    "Edit Family Member",
+                    style:
+                        TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 25.h),
+                  _buildEditableField("Full Name", nameController),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _buildEditableField("Age", ageController,
+                              keyboardType: TextInputType.number)),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Relationship",
+                          value: selectedRelation,
+                          items: relationItems,
+                          onChanged: (val) =>
+                              setModalState(() => selectedRelation = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Gender",
+                          value: selectedGender,
+                          items: ['male', 'female', 'other'],
+                          onChanged: (val) =>
+                              setModalState(() => selectedGender = val!),
+                        ),
+                      ),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: "Blood Group",
+                          value: selectedBloodGroup,
+                          items: [
+                            'A+',
+                            'A-',
+                            'B+',
+                            'B-',
+                            'AB+',
+                            'AB-',
+                            'O+',
+                            'O-'
+                          ],
+                          onChanged: (val) =>
+                              setModalState(() => selectedBloodGroup = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 15.h),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _buildEditableField("Weight (kg)", weightController,
+                              keyboardType: TextInputType.number)),
+                      SizedBox(width: 15.w),
+                      Expanded(
+                          child: _buildEditableField("Height (cm)", heightController,
+                              keyboardType: TextInputType.number)),
+                    ],
+                  ),
+                  SizedBox(height: 40.h),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          context.read<MemberCubit>().updateMember(
+                                member: member.copyWith(
+                                  name: nameController.text,
+                                  age: int.tryParse(ageController.text) ??
+                                      member.age,
+                                  gender: selectedGender.toLowerCase(),
+                                  bloodGroup: selectedBloodGroup,
+                                  relation: selectedRelation,
+                                  weight:
+                                      double.tryParse(weightController.text),
+                                  height:
+                                      double.tryParse(heightController.text),
+                                ),
+                              );
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 25.h),
+                          backgroundColor: Colors.greenAccent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r)),
+                        ),
+                        child: Text("Save Changes",
+                            style: TextStyle(
+                                color: Colors.black, fontSize: 10.sp)),
+                      ),
+                      SizedBox(height: 12.h),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 25.h),
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r)),
+                        ),
+                        child: Text("Cancel",
+                            style: TextStyle(
+                                color: Colors.black, fontSize: 10.sp)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

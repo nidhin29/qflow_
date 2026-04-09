@@ -11,6 +11,8 @@ class RegisterDetailsState {
   final String gender;
   final String bloodGroup;
   final String contactNumber;
+  final String city;
+  final String district;
   final String? profileImagePath;
   final bool isSubmitting;
   final bool showErrorMessages;
@@ -26,6 +28,8 @@ class RegisterDetailsState {
     required this.gender,
     required this.bloodGroup,
     required this.contactNumber,
+    required this.city,
+    required this.district,
     this.profileImagePath,
     required this.isSubmitting,
     required this.showErrorMessages,
@@ -42,6 +46,8 @@ class RegisterDetailsState {
         gender: 'Male',
         bloodGroup: 'A+',
         contactNumber: '',
+        city: '',
+        district: '',
         profileImagePath: null,
         isSubmitting: false,
         showErrorMessages: false,
@@ -58,6 +64,8 @@ class RegisterDetailsState {
     String? gender,
     String? bloodGroup,
     String? contactNumber,
+    String? city,
+    String? district,
     String? profileImagePath,
     bool? isSubmitting,
     bool? showErrorMessages,
@@ -73,6 +81,8 @@ class RegisterDetailsState {
       gender: gender ?? this.gender,
       bloodGroup: bloodGroup ?? this.bloodGroup,
       contactNumber: contactNumber ?? this.contactNumber,
+      city: city ?? this.city,
+      district: district ?? this.district,
       profileImagePath: profileImagePath ?? this.profileImagePath,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       showErrorMessages: showErrorMessages ?? this.showErrorMessages,

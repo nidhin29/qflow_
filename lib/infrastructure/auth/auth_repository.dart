@@ -237,40 +237,57 @@ class AuthRepository implements IAuthService {
   @override
   Future<Either<MainFailure, Unit>> logout() async {
     try {
-      final response = await _dio.post('/users/logout');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        await _storage.delete(key: 'access_token');
-        await _storage.delete(key: 'refresh_token');
-        _session.clear();
-        return right(unit);
-      } else {
-        return left(const MainFailure.serverFailure());
-      }
+      // Attempt to notify server of logout
+      await _dio.post('/users/logout');
     } catch (e) {
-      return left(const MainFailure.clientFailure());
+      log('AuthRepository: Logout API call failed, but clearing local session anyway: $e');
+    } finally {
+      // ALWAYS clear local session data regardless of API success/failure
+      await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'refresh_token');
+      _session.clear();
     }
+    return right(unit);
   }
 
   @override
   Future<Either<MainFailure, Unit>> refreshAccessToken() async {
     try {
-      final response = await _dio.post('/users/refresh-access-token');
+      final refreshToUse =
+          _session.refreshToken ?? await _storage.read(key: 'refresh_token');
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = response.data['data'];
-        final access = data['accessToken'];
-        final refresh = data['refreshToken'];
-
-        await _storage.write(key: 'access_token', value: access);
-        await _storage.write(key: 'refresh_token', value: refresh);
-        _session.saveTokens(access: access, refresh: refresh);
-        
-        return right(unit);
-      } else {
+      if (refreshToUse == null) {
+        log('AuthRepository: No refresh token available');
         return left(const MainFailure.authFailure());
       }
+
+      final response = await _dio.post(
+        '/users/refresh-access-token',
+        data: {'refreshToken': refreshToUse},
+        options: Options(
+          headers: {
+            'skip_auth': true, // Prevent auth interceptor from causing loops
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('AuthRepository: Refresh response: ${response.data}');
+        final data = response.data['data'] ?? response.data;
+        final access = data['accessToken'] ?? data['access_token'];
+        final refresh = data['refreshToken'] ?? data['refresh_token'];
+
+        if (access != null && refresh != null) {
+          await _storage.write(key: 'access_token', value: access);
+          await _storage.write(key: 'refresh_token', value: refresh);
+          _session.saveTokens(access: access, refresh: refresh);
+          log('AuthRepository: Tokens refreshed successfully');
+          return right(unit);
+        }
+      }
+      return left(const MainFailure.authFailure());
     } catch (e) {
+      log('AuthRepository Error during Refresh Token: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }

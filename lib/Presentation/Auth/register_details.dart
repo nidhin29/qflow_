@@ -136,6 +136,18 @@ class RegisterDetailsScreen extends StatelessWidget {
                         .contactNumberChanged(v),
                   ),
                   kheight15,
+                  _buildTextField(
+                    label: 'City',
+                    onChanged: (v) =>
+                        context.read<RegisterDetailsCubit>().cityChanged(v),
+                  ),
+                  kheight15,
+                  _buildTextField(
+                    label: 'District',
+                    onChanged: (v) =>
+                        context.read<RegisterDetailsCubit>().districtChanged(v),
+                  ),
+                  kheight15,
                   Row(
                     children: [
                       Expanded(

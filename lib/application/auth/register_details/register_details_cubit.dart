@@ -48,6 +48,14 @@ class RegisterDetailsCubit extends Cubit<RegisterDetailsState> {
     emit(state.copyWith(contactNumber: contactNumber, failureOrSuccessOption: none()));
   }
 
+  void cityChanged(String city) {
+    emit(state.copyWith(city: city, failureOrSuccessOption: none()));
+  }
+
+  void districtChanged(String district) {
+    emit(state.copyWith(district: district, failureOrSuccessOption: none()));
+  }
+
   void profileImageChanged(String path) {
     emit(state.copyWith(profileImagePath: path, failureOrSuccessOption: none()));
   }
@@ -66,6 +74,8 @@ class RegisterDetailsCubit extends Cubit<RegisterDetailsState> {
       gender: state.gender,
       bloodGroup: state.bloodGroup,
       contactNumber: state.contactNumber,
+      city: state.city,
+      district: state.district,
     );
 
     final failureOrSuccess = await _userService.registerUserDetails(

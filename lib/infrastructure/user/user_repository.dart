@@ -23,7 +23,7 @@ class UserRepository implements IUserService {
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? response.data;
-        log('UserRepository: User details response: $data');
+       
         final userData = data['user'] ?? data;
         final user = UserModel.fromMap(userData as Map<String, dynamic>);
         _session.saveUsername(username: user.username);
@@ -32,7 +32,7 @@ class UserRepository implements IUserService {
         return left(const MainFailure.serverFailure());
       }
     } catch (e) {
-      log(e.toString());
+ 
       return left(const MainFailure.clientFailure());
     }
   }
@@ -43,9 +43,9 @@ class UserRepository implements IUserService {
     String? profileImagePath,
   }) async {
     try {
-      
       final formData = FormData();
       
+
       // Explicitly adding fields as strings to prevent multipart boundary issues
       formData.fields.addAll([
         MapEntry('first_name', user.firstName),
@@ -57,6 +57,8 @@ class UserRepository implements IUserService {
         MapEntry('gender', user.gender.toLowerCase()),
         MapEntry('blood_group', user.bloodGroup),
         MapEntry('contact_number', user.contactNumber),
+        MapEntry('city', user.city),
+        MapEntry('district', user.district),
       ]);
 
       if (profileImagePath != null && profileImagePath.isNotEmpty) {
@@ -69,9 +71,7 @@ class UserRepository implements IUserService {
             contentType: MediaType('image', ext == 'png' ? 'png' : 'jpeg'),
           ),
         ));
-       
       }
-
 
       final response = await _dio.post(
         '/users/register-user-details',
@@ -79,18 +79,18 @@ class UserRepository implements IUserService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('UserRepository: Registration response: ${response.data}');
+       
         final data = response.data['data'] ?? response.data;
         final userData = data['user'] ?? data;
         final confirmedUsername = userData['username'] ?? user.username;
         _session.saveUsername(username: confirmedUsername);
-        log('UserRepository: Session updated with confirmed username: $confirmedUsername');
+        
         return right(unit);
       } else {
         return left(const MainFailure.serverFailure());
       }
     } catch (e) {
-      log(e.toString());
+
       return left(const MainFailure.clientFailure());
     }
   }
@@ -102,17 +102,20 @@ class UserRepository implements IUserService {
   }) async {
     try {
       final formData = FormData();
-      
+
+
       formData.fields.addAll([
         MapEntry('first_name', user.firstName),
         MapEntry('last_name', user.lastName),
-        MapEntry('username', user.username),
         MapEntry('age', user.age.toString()),
         MapEntry('weight', user.weight.toString()),
         MapEntry('height', user.height.toString()),
         MapEntry('gender', user.gender.toLowerCase()),
         MapEntry('blood_group', user.bloodGroup),
         MapEntry('contact_number', user.contactNumber),
+        MapEntry('city', user.city),
+        MapEntry('district', user.district),
+        MapEntry('username', user.username),
       ]);
 
       if (profileImagePath != null && profileImagePath.isNotEmpty) {
@@ -127,17 +130,20 @@ class UserRepository implements IUserService {
         ));
       }
 
+      
       final response = await _dio.put(
         '/users/update-user-details',
         data: formData,
       );
 
       if (response.statusCode == 200) {
+    
         return right(unit);
       } else {
         return left(const MainFailure.serverFailure());
       }
     } catch (e) {
+      log('UserRepository Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }

@@ -6,6 +6,7 @@ import 'package:qflow/Presentation/Member/member.dart';
 import 'package:qflow/Presentation/Profile/profile.dart';
 import 'package:qflow/application/appointment/appointment_cubit.dart';
 import 'package:qflow/application/profile/profile_cubit.dart';
+import 'package:qflow/application/member/member_cubit.dart';
 import 'package:qflow/domain/core/di/injection.dart';
 
 class MainScreen extends StatelessWidget {
@@ -26,6 +27,9 @@ class MainScreen extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => getIt<ProfileCubit>()..getUserDetails(),
+        ),
+        BlocProvider(
+          create: (context) => getIt<MemberCubit>(),
         ),
       ],
       child: Scaffold(

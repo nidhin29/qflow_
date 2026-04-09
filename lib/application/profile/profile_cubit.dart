@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:qflow/application/profile/profile_state.dart';
+import 'package:qflow/domain/core/failures.dart';
 import 'package:qflow/domain/user/user_service.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
 
@@ -12,14 +13,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit(this._userService) : super(ProfileState.initial());
 
   Future<void> getUserDetails() async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(isLoading: true, failureOrSuccessOption: none()));
 
     final failureOrUser = await _userService.getUserDetails();
 
     emit(failureOrUser.fold(
       (f) => state.copyWith(
         isLoading: false,
-        failureOrSuccessOption: some(left(f)),
+        failureOrSuccessOption: some(left<MainFailure, Unit>(f)),
       ),
       (user) => state.copyWith(
         isLoading: false,
@@ -48,8 +49,12 @@ class ProfileCubit extends Cubit<ProfileState> {
       failureOrSuccessOption: some(failureOrSuccess),
       // Clean up the temporary path on success
       profileImagePath: failureOrSuccess.isRight() ? null : state.profileImagePath,
-      // Update the user model in state on success
-      userOption: failureOrSuccess.isRight() ? some(user) : state.userOption,
     ));
+
+    // After a successful update, re-fetch the user details to get fresh data (including thumbnails/URLs)
+    // from the server, since the update API only returns a success message.
+    if (failureOrSuccess.isRight()) {
+      await getUserDetails();
+    }
   }
 }

@@ -6,7 +6,8 @@ import 'package:qflow/Presentation/common/book_widget.dart';
 import 'package:qflow/Presentation/common/file_widget.dart';
 import 'package:qflow/application/appointment/appointment_cubit.dart';
 import 'package:qflow/application/appointment/appointment_state.dart';
-import 'package:qflow/constants/const.dart';
+import 'package:qflow/application/member/member_cubit.dart';
+import 'package:qflow/application/member/member_state.dart' as ms;
 import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 
 class BookingPage extends StatelessWidget {
@@ -85,34 +86,29 @@ class BookingPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              kheight20,
-              kheight10,
-              kheight20,
-              kheight20,
+              SizedBox(height: 70.h),
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
                 style: ButtonStyle(
                   elevation: const WidgetStatePropertyAll(4),
-                  minimumSize: WidgetStateProperty.all(Size(75.w, 48.h)),
+                  minimumSize: WidgetStateProperty.all(Size(40.w, 40.h)),
                   backgroundColor: WidgetStateProperty.all(
                       const Color.fromRGBO(255, 255, 255, 1)),
                   shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.r),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back,
-                  weight: 600,
-                  color: Color.fromRGBO(34, 34, 34, 1),
-                  size: 18,
+                  color: const Color.fromRGBO(34, 34, 34, 1),
+                  size: 18.sp,
                 ),
               ),
-              kheight20,
-              kheight10,
+              SizedBox(height: 25.h),
               Container(
                 width: 350.w,
                 height: 339.h,
@@ -132,7 +128,7 @@ class BookingPage extends StatelessWidget {
                       ),
                     ]),
               ),
-              kheight20,
+              SizedBox(height: 20.h),
               Text(
                 'Dr. KM Cherian Institute of Medical Science',
                 style: TextStyle(
@@ -142,7 +138,7 @@ class BookingPage extends StatelessWidget {
                   color: const Color.fromRGBO(39, 39, 39, 1),
                 ),
               ),
-              kheight15,
+              SizedBox(height: 15.h),
               Text('Kallishery,Alappuzha',
                   style: GoogleFonts.dmSans(
                       textStyle: TextStyle(
@@ -150,10 +146,9 @@ class BookingPage extends StatelessWidget {
                     fontSize: 19.sp,
                     color: const Color.fromRGBO(39, 39, 39, 1),
                   ))),
-              kheight15,
+              SizedBox(height: 20.h),
               Container(
                 width: 350.w,
-                height: 125.h,
                 decoration: BoxDecoration(
                   color: const Color.fromRGBO(255, 255, 255, 1),
                   borderRadius: BorderRadius.circular(21.r),
@@ -193,9 +188,8 @@ class BookingPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    kheight20,
                     Padding(
-                      padding: EdgeInsets.only(left: 18.w),
+                      padding: EdgeInsets.fromLTRB(18.w, 0, 18.w, 15.h),
                       child: const SizedBox(
                         height: 20,
                         child: FieldsWidget(
@@ -207,10 +201,9 @@ class BookingPage extends StatelessWidget {
                   ],
                 ),
               ),
-              kheight20,
+              SizedBox(height: 20.h),
               Container(
                 width: 350.w,
-                height: 461.h,
                 decoration: BoxDecoration(
                   color: const Color.fromRGBO(255, 255, 255, 1),
                   borderRadius: BorderRadius.circular(28.r),
@@ -227,13 +220,11 @@ class BookingPage extends StatelessWidget {
                 child: Column(
                   children: [
                     Padding(
-                      padding: EdgeInsets.only(left: 20.h, right: 20.h),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          kheight20,
-                          kheight5,
-                          kheight10,
+                          SizedBox(height: 20.h),
                           Text(
                             'Book your Slot',
                             style: TextStyle(
@@ -243,7 +234,7 @@ class BookingPage extends StatelessWidget {
                               color: const Color.fromRGBO(39, 39, 39, 1),
                             ),
                           ),
-                          kheight20,
+                          SizedBox(height: 20.h),
                           BookFieldWidget(
                             selectedDepartment: selectedDepartment,
                             title: 'Department',
@@ -253,13 +244,21 @@ class BookingPage extends StatelessWidget {
                               'Orthopedics'
                             ],
                           ),
-                          kheight10,
-                          BookFieldWidget(
-                            selectedDepartment: selectedPatient,
-                            title: 'Patient',
-                            list: const ['John', 'Alex', 'Mathew'],
+                          SizedBox(height: 15.h),
+                          BlocBuilder<MemberCubit, ms.MemberState>(
+                            builder: (context, state) {
+                              final membersList =
+                                  state.members.map((m) => m.name).toList();
+                              if (membersList.isEmpty) membersList.add("Self");
+
+                              return BookFieldWidget(
+                                selectedDepartment: selectedPatient,
+                                title: 'Patient',
+                                list: membersList,
+                              );
+                            },
                           ),
-                          kheight10,
+                          SizedBox(height: 15.h),
                           Row(
                             children: [
                               Expanded(
@@ -316,7 +315,7 @@ class BookingPage extends StatelessWidget {
                                           ),
                                           Container(
                                             width: 1.5,
-                                            height: 55,
+                                            height: 48.h,
                                             color: const Color.fromRGBO(
                                                 210, 210, 210, 1),
                                           ),
@@ -434,7 +433,7 @@ class BookingPage extends StatelessWidget {
                               )),
                             ],
                           ),
-                          kheight20,
+                          SizedBox(height: 25.h),
                         ],
                       ),
                     ),
@@ -457,67 +456,63 @@ class BookingPage extends StatelessWidget {
                         );
                       },
                       builder: (context, state) {
-                        return ElevatedButton(
-                          onPressed: state.isLoading
-                              ? null
-                              : () {
-                                  final appointment = AppointmentModel(
-                                    hospitalId: '123', // Dummy for now
-                                    hospitalName:
-                                        'Dr. KM Cherian Institute of Medical Science',
-                                    hospitalAddress: 'Kallishery,Alappuzha',
-                                    appointmentDate: selectedDate.value
-                                        .toIso8601String()
-                                        .split('T')[0],
-                                    appointmentTime:
-                                        selectedTime.value.format(context),
-                                    estimatedTime: 'Pending',
-                                    tokenNumber: 'TBD',
-                                    department: selectedDepartment.value ??
-                                        'General',
-                                    departmentName: selectedDepartment.value ??
-                                        'General',
-                                    patientName: selectedPatient.value ??
-                                        'Self',
-                                  );
+                        return Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: ElevatedButton(
+                            onPressed: state.isLoading
+                                ? null
+                                : () {
+                                    final appointment = AppointmentModel(
+                                      hospitalId: '123', // Dummy for now
+                                      hospitalName:
+                                          'Dr. KM Cherian Institute of Medical Science',
+                                      hospitalAddress: 'Kallishery,Alappuzha',
+                                      appointmentDate: selectedDate.value
+                                          .toIso8601String()
+                                          .split('T')[0],
+                                      appointmentTime:
+                                          selectedTime.value.format(context),
+                                      estimatedTime: 'Pending',
+                                      tokenNumber: 'TBD',
+                                      department: selectedDepartment.value ??
+                                          'General',
+                                      departmentName: selectedDepartment.value ??
+                                          'General',
+                                      patientName: selectedPatient.value ??
+                                          'Self',
+                                    );
 
-                                  context
-                                      .read<AppointmentCubit>()
-                                      .bookAppointment(appointment);
-                                },
-                          style: ButtonStyle(
-                            minimumSize:
-                                WidgetStateProperty.all(Size(330.w, 52.h)),
-                            backgroundColor:
-                                WidgetStateProperty.all(Colors.black),
-                            overlayColor:
-                                WidgetStateProperty.all(Colors.transparent),
-                            shape: WidgetStateProperty.all(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16.2.r),
-                              ),
+                                    context
+                                        .read<AppointmentCubit>()
+                                        .bookAppointment(appointment);
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 25.h),
+                              backgroundColor: Colors.greenAccent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20.r)),
                             ),
+                            child: state.isLoading
+                                ? SizedBox(
+                                    height: 15.h,
+                                    width: 15.h,
+                                    child: const CircularProgressIndicator(
+                                        color: Colors.black, strokeWidth: 2),
+                                  )
+                                : Text(
+                                    'Book Now',
+                                    style: TextStyle(
+                                        color: Colors.black, fontSize: 10.sp),
+                                  ),
                           ),
-                          child: state.isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white)
-                              : Text(
-                                  'Book Now',
-                                  style: GoogleFonts.ptSans(
-                                      textStyle: TextStyle(
-                                          fontWeight: FontWeight.w400,
-                                          fontSize: 18.sp,
-                                          color: Colors.white)),
-                                ),
                         );
                       },
-                    )
+                    ),
+                    SizedBox(height: 15.h),
                   ],
                 ),
               ),
-              kheight20,
-              kheight20,
-              kheight20
+              SizedBox(height: 40.h),
             ],
           ),
         ),

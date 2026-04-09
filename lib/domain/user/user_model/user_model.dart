@@ -10,6 +10,8 @@ class UserModel {
   final String gender;
   final String bloodGroup;
   final String contactNumber;
+  final String city;
+  final String district;
   final String? profileImageUrl;
   final String? thumbnailUrl;
 
@@ -23,13 +25,15 @@ class UserModel {
     required this.gender,
     required this.bloodGroup,
     required this.contactNumber,
+    required this.city,
+    required this.district,
     this.profileImageUrl,
     this.thumbnailUrl,
   });
 
   @override
   String toString() {
-    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, profileImageUrl: $profileImageUrl, thumbnailUrl: $thumbnailUrl)';
+    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, city: $city, district: $district, profileImageUrl: $profileImageUrl, thumbnailUrl: $thumbnailUrl)';
   }
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
@@ -44,6 +48,8 @@ class UserModel {
       bloodGroup: (data['blood_group'] ?? data['bloodGroup'] ?? '').toString(),
       contactNumber:
           (data['contact_number'] ?? data['contactNumber'] ?? '').toString(),
+      city: (data['city'] ?? '').toString(),
+      district: (data['district'] ?? '').toString(),
       profileImageUrl: data['profile_image'] ?? data['profileImageUrl'],
       thumbnailUrl: data['thumbnail_url'] ?? data['thumbnailUrl'],
     );
@@ -60,6 +66,8 @@ class UserModel {
       'gender': gender,
       'blood_group': bloodGroup,
       'contact_number': contactNumber,
+      'city': city,
+      'district': district,
       'profile_image': profileImageUrl,
       'thumbnail_url': thumbnailUrl,
     };
@@ -83,6 +91,8 @@ class UserModel {
     String? gender,
     String? bloodGroup,
     String? contactNumber,
+    String? city,
+    String? district,
     String? profileImageUrl,
     String? thumbnailUrl,
   }) {
@@ -96,6 +106,8 @@ class UserModel {
       gender: gender ?? this.gender,
       bloodGroup: bloodGroup ?? this.bloodGroup,
       contactNumber: contactNumber ?? this.contactNumber,
+      city: city ?? this.city,
+      district: district ?? this.district,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );

@@ -7,7 +7,6 @@ import 'package:qflow/application/appointment/appointment_cubit.dart';
 import 'package:qflow/application/appointment/appointment_state.dart';
 import 'package:qflow/application/profile/profile_cubit.dart';
 import 'package:qflow/application/profile/profile_state.dart';
-import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -24,14 +23,11 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(
-            left: 30.w,
-            top: 81.h,
-            right: 10.w,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 25.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: 70.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -43,6 +39,7 @@ class HomeScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w400,
+                          color: Colors.grey[600],
                         ),
                       ),
                       BlocBuilder<ProfileCubit, ProfileState>(
@@ -54,104 +51,106 @@ class HomeScreen extends StatelessWidget {
                           return Text(
                             userName,
                             style: TextStyle(
-                              fontSize: 21.45.sp,
-                              fontWeight: FontWeight.w400,
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'CabinetGrotesk',
                             ),
                           );
                         },
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(right: 25.h),
-                    child: Container(
-                        width: 56.w,
-                        height: 56.h,
-                        decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color.fromRGBO(245, 245, 245, 1)),
-                        child: Image.asset('assets/icon/not.png')),
+                  Container(
+                    width: 50.w,
+                    height: 50.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color.fromRGBO(245, 245, 245, 1),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/icon/not.png',
+                        width: 24.w,
+                        height: 24.w,
+                      ),
+                    ),
                   )
                 ],
               ),
-              kheight10,
-              kheight20,
+              SizedBox(height: 25.h),
               SizedBox(
-                width: 362.w,
-                height: 80.h,
+                height: 55.h,
                 child: TextField(
                   cursorColor: const Color.fromRGBO(66, 132, 156, 1),
                   style: GoogleFonts.poppins(
-                    textStyle: const TextStyle(
-                      color: Color.fromRGBO(34, 34, 34, 1),
-                      fontSize: 13,
+                    textStyle: TextStyle(
+                      color: const Color.fromRGBO(34, 34, 34, 1),
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                   decoration: InputDecoration(
-                    counterStyle: GoogleFonts.poppins(
-                      textStyle: const TextStyle(
-                        color: Color.fromRGBO(173, 173, 173, 1),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.all(15.w),
+                      child: Image.asset(
+                        "assets/icon/search1.png",
+                        color: Colors.grey[400],
                       ),
                     ),
-                    prefixIcon: TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        surfaceTintColor: Colors.white,
-                        overlayColor: const Color.fromRGBO(173, 173, 173, 1),
-                      ),
-                      child: Container(
-                        width: 28.w,
-                        height: 28.h,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage("assets/icon/search1.png"),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                    hintText: 'Search',
+                    hintText: 'Search appointments...',
                     hintStyle: GoogleFonts.poppins(
-                        textStyle: const TextStyle(
-                            color: Color.fromRGBO(173, 173, 173, 1),
-                            fontSize: 18,
+                        textStyle: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w400)),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20.r),
+                      borderRadius: BorderRadius.circular(15.r),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color.fromRGBO(248, 248, 248, 0.6),
-                    contentPadding: EdgeInsets.symmetric(vertical: 25.h),
+                    fillColor: const Color.fromRGBO(248, 248, 248, 1),
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
-              kheight20,
+              SizedBox(height: 30.h),
               Text('My Appointments',
                   style: GoogleFonts.dmSans(
                       textStyle: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
-                    color: const Color.fromRGBO(125, 125, 125, 1),
+                    color: const Color.fromRGBO(39, 39, 39, 1),
                   ))),
-              kheight20,
+              SizedBox(height: 20.h),
               // Sliding Carousel
               BlocBuilder<AppointmentCubit, AppointmentState>(
                 builder: (context, state) {
                   if (state.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return SizedBox(
+                      height: 280.h,
+                      child: const Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
+                    );
                   }
                   if (state.upcomingAppointments.isEmpty) {
-                    return const Center(child: Text('No upcoming appointments'));
+                    return Container(
+                      height: 150.h,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(20.r),
+                        border: Border.all(color: Colors.grey[100]!),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'No upcoming appointments',
+                          style: GoogleFonts.dmSans(color: Colors.grey),
+                        ),
+                      ),
+                    );
                   }
                   return SizedBox(
-                    height: 320.h,
+                    height: 280.h,
                     child: PageView.builder(
                       controller: pageController,
                       itemCount: state.upcomingAppointments.length,
@@ -164,12 +163,13 @@ class HomeScreen extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 15.h),
 
-              // Page Indicator using ValueListenableBuilder
+              // Page Indicator
               Center(
                 child: BlocBuilder<AppointmentCubit, AppointmentState>(
                   builder: (context, state) {
+                    if (state.upcomingAppointments.isEmpty) return const SizedBox();
                     return ValueListenableBuilder<int>(
                       valueListenable: currentPageNotifier,
                       builder: (context, currentPage, _) {
@@ -179,14 +179,14 @@ class HomeScreen extends StatelessWidget {
                               state.upcomingAppointments.length, (index) {
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.symmetric(horizontal: 5),
-                              width: currentPage == index ? 60 : 25,
-                              height: 6,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: currentPage == index ? 24.w : 8.w,
+                              height: 4.h,
                               decoration: BoxDecoration(
                                 color: currentPage == index
-                                    ? const Color.fromRGBO(147, 147, 147, 1)
-                                    : const Color.fromRGBO(230, 230, 230, 1),
-                                borderRadius: BorderRadius.circular(5),
+                                    ? Colors.black
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             );
                           }),
@@ -196,101 +196,132 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
-              kheight20,
-              Text('Previous Appointments',
+              SizedBox(height: 35.h),
+              Text('Previous Activity',
                   style: GoogleFonts.dmSans(
                       textStyle: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
-                    color: const Color.fromRGBO(125, 125, 125, 1),
+                    color: const Color.fromRGBO(39, 39, 39, 1),
                   ))),
+              SizedBox(height: 15.h),
 
               BlocBuilder<AppointmentCubit, AppointmentState>(
                 builder: (context, state) {
                   if (state.isLoading && state.pastAppointments.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
+                  }
+                  if (state.pastAppointments.isEmpty && !state.isLoading) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                      child: Center(child: Text('No previous appointments', style: GoogleFonts.dmSans(color: Colors.grey))),
+                    );
                   }
                   return ListView.separated(
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
+                    padding: EdgeInsets.only(bottom: 100.h),
                     itemBuilder: (context, index) {
                       final appointment = state.pastAppointments[index];
-                      return Padding(
-                        padding: EdgeInsets.only(right: 20.h),
-                        child: Container(
-                          width: 348.w,
-                          height: 125.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15.r),
-                            border: Border.all(
-                              color: const Color.fromRGBO(209, 209, 209, 1),
+                      return Container(
+                        padding: EdgeInsets.all(15.w),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18.r),
+                          color: Colors.white,
+                          border: Border.all(color: const Color.fromRGBO(240, 240, 240, 1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            color: const Color.fromRGBO(255, 255, 255, 1),
-                          ),
-                          child: Row(
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(left: 20.w),
-                                child: const CircleAvatar(
-                                  backgroundColor: Colors.grey,
-                                  radius: 23,
-                                ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50.w,
+                              height: 50.w,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 25.w, vertical: 8.w),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                              child: Center(
+                                child: Icon(Icons.local_hospital_outlined, color: Colors.grey[400]),
+                              ),
+                            ),
+                            SizedBox(width: 15.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appointment.hospitalName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      textStyle: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Row(
                                     children: [
                                       Text(
-                                        appointment.hospitalName,
-                                        style: GoogleFonts.poppins(
-                                          textStyle: TextStyle(
-                                            fontSize: 15.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black,
-                                          ),
+                                        DateFormat('dd MMM yyyy').format(
+                                            DateTime.parse(appointment.appointmentDate)),
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[500],
                                         ),
+                                      ),
+                                      Container(
+                                        width: 3.w,
+                                        height: 3.w,
+                                        margin: EdgeInsets.symmetric(horizontal: 8.w),
+                                        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey[300]),
                                       ),
                                       Text(
-                                        DateFormat('d MMM y').format(
-                                            DateTime.parse(
-                                                appointment.appointmentDate)),
+                                        appointment.patientName,
                                         style: TextStyle(
-                                          fontSize: 13.sp,
-                                          fontFamily: 'CabinetGrotesk',
+                                          fontSize: 12.sp,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.black,
+                                          color: Colors.grey[500],
                                         ),
                                       ),
-                                      Text(appointment.patientName,
-                                          style: GoogleFonts.poppins(
-                                              textStyle: TextStyle(
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 13.sp,
-                                            color: const Color.fromRGBO(
-                                                145, 145, 145, 1),
-                                          ))),
                                     ],
                                   ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: Text(
+                                'Done',
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey[600],
                                 ),
-                              )
-                            ],
-                          ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
-                    separatorBuilder: (context, index) => kheight20,
+                    separatorBuilder: (context, index) => SizedBox(height: 12.h),
                     itemCount: state.pastAppointments.length,
                   );
                 },
               ),
-              kheight20,
-              kheight20,
-              kheight20,
-              kheight20,
             ],
           ),
         ),
@@ -302,141 +333,124 @@ class HomeScreen extends StatelessWidget {
   Widget _buildCard(AppointmentModel appointment) {
     return Container(
       width: 318.w,
-      height: 320.h,
-      margin: const EdgeInsets.only(right: 20),
+      margin: EdgeInsets.only(right: 15.w, bottom: 5.h),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
-          color: const Color.fromRGBO(209, 209, 209, 1),
-        ),
-        color: const Color.fromRGBO(255, 255, 255, 1),
+        borderRadius: BorderRadius.circular(24.r),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: const Color.fromRGBO(245, 245, 245, 1)),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 17.h),
+        padding: EdgeInsets.all(20.w),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                kheight10,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color.fromRGBO(38, 91, 138, 1),
-                          Color.fromRGBO(88, 135, 177, 1),
-                          Color.fromRGBO(148, 188, 224, 1),
-                          Color.fromRGBO(182, 219, 251, 1),
-                          Color.fromRGBO(38, 91, 138, 1),
-                        ],
-                        tileMode: TileMode.mirror,
-                      ).createShader(bounds),
-                      child: Text(
-                        'Out Patient\nTICKET',
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontFamily: 'CabinetGrotesk',
-                          fontSize: 26.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFF1A3955),
+                      Color(0xFF2C5E8A),
+                      Color(0xFF4A8CC7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    'OP\nTICKET',
+                    style: TextStyle(
+                      fontFamily: 'CabinetGrotesk',
+                      fontSize: 28.sp,
+                      height: 0.9,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          DateFormat('d MMM').format(
-                              DateTime.parse(appointment.appointmentDate)),
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontFamily: 'CabinetGrotesk',
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                        Text(
-                          DateFormat('y').format(
-                              DateTime.parse(appointment.appointmentDate)),
-                          style: TextStyle(
-                            fontSize: 24.sp,
-                            fontFamily: 'CabinetGrotesk',
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                kheight5,
-                Text(
-                  appointment.hospitalName,
-                  style: TextStyle(
-                    fontSize: 20.sp,
-                    fontFamily: 'CabinetGrotesk',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
                   ),
                 ),
-                kheight5,
-                Text(appointment.hospitalAddress,
-                    style: GoogleFonts.dmSans(
-                        textStyle: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 15.sp,
-                      color: Colors.black,
-                    ))),
-                kheight5,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    BookTileWidget(
-                      heading: 'Estimated Time',
-                      content: appointment.estimatedTime,
+                    Text(
+                      DateFormat('dd MMM').format(DateTime.parse(appointment.appointmentDate)),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[400],
+                      ),
                     ),
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    BookTileWidget(
-                        heading: 'OP Ticket Number',
-                        content: '#${appointment.tokenNumber}'),
-                    kwidth5,
-                    kwidth5,
+                    Text(
+                      DateFormat('yyyy').format(DateTime.parse(appointment.appointmentDate)),
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontFamily: 'CabinetGrotesk',
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
                   ],
                 ),
-                kheight5,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    BookTileWidget(
-                      heading: 'Patient',
-                      content: appointment.patientName,
-                    ),
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    BookTileWidget(
-                        heading: 'Department',
-                        content: appointment.departmentName),
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                    kwidth5,
-                  ],
+              ],
+            ),
+            SizedBox(height: 15.h),
+            Text(
+              appointment.hospitalName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontFamily: 'CabinetGrotesk',
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              appointment.hospitalAddress,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                textStyle: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 13.sp,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                BookTileWidget(
+                  heading: 'Patient',
+                  content: appointment.patientName,
+                ),
+                BookTileWidget(
+                  heading: 'Department',
+                  content: appointment.departmentName,
+                ),
+              ],
+            ),
+            SizedBox(height: 15.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                BookTileWidget(
+                  heading: 'Estimated Time',
+                  content: appointment.estimatedTime,
+                ),
+                BookTileWidget(
+                  heading: 'Ticket Number',
+                  content: '#${appointment.tokenNumber}',
+                  isPrimary: true,
                 ),
               ],
             ),
@@ -450,10 +464,12 @@ class HomeScreen extends StatelessWidget {
 class BookTileWidget extends StatelessWidget {
   final String heading;
   final String content;
+  final bool isPrimary;
   const BookTileWidget({
     super.key,
     required this.heading,
     required this.content,
+    this.isPrimary = false,
   });
 
   @override
@@ -462,27 +478,24 @@ class BookTileWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          heading,
+          heading.toUpperCase(),
           style: GoogleFonts.dmSans(
             textStyle: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 10.sp,
-              color: const Color.fromRGBO(
-                191,
-                191,
-                191,
-                1,
-              ),
+              fontWeight: FontWeight.w800,
+              fontSize: 9.sp,
+              letterSpacing: 0.5,
+              color: Colors.grey[400],
             ),
           ),
         ),
+        SizedBox(height: 2.h),
         Text(
           content,
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: 16.sp,
             fontFamily: 'CabinetGrotesk',
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
+            fontWeight: FontWeight.w700,
+            color: isPrimary ? const Color(0xFF2C5E8A) : Colors.black,
           ),
         ),
       ],
