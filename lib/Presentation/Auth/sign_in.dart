@@ -31,7 +31,14 @@ class _SignInScreenState extends State<SignInScreen> {
             (either) => either.fold(
               (failure) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Authentication Failed')),
+                  SnackBar(
+                    content: Text(failure.map(
+                      clientFailure: (_) => 'Network Error',
+                      authFailure: (_) => 'Invalid credentials',
+                      serverFailure: (_) => 'Server Error',
+                      serverError: (e) => e.message ?? 'Authentication Failed',
+                    )),
+                  ),
                 );
               },
               (successType) {

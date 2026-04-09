@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:qflow/Presentation/Home/home.dart';
 import 'package:qflow/Presentation/Member/member.dart';
 import 'package:qflow/Presentation/Profile/profile.dart';
-import 'package:qflow/application/appointment/appointment_cubit.dart';
-import 'package:qflow/application/profile/profile_cubit.dart';
-import 'package:qflow/application/member/member_cubit.dart';
-import 'package:qflow/domain/core/di/injection.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -18,46 +13,31 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => getIt<AppointmentCubit>()
-            ..getUpcomingAppointments()
-            ..getPastAppointments(),
-        ),
-        BlocProvider(
-          create: (context) => getIt<ProfileCubit>()..getUserDetails(),
-        ),
-        BlocProvider(
-          create: (context) => getIt<MemberCubit>(),
-        ),
-      ],
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                _selectedIndexNotifier.value = index;
-              },
-              children: const [
-                HomeScreen(),
-                MemberScreen(),
-                ProfileScreen(),
-              ],
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              _selectedIndexNotifier.value = index;
+            },
+            children: const [
+              HomeScreen(),
+              MemberScreen(),
+              ProfileScreen(),
+            ],
+          ),
+          Positioned(
+            bottom: 15.h,
+            left: 0,
+            right: 0,
+            child: CustomNavBar(
+              selectedIndexNotifier: _selectedIndexNotifier,
+              pageController: _pageController,
             ),
-            Positioned(
-              bottom: 15.h,
-              left: 0,
-              right: 0,
-              child: CustomNavBar(
-                selectedIndexNotifier: _selectedIndexNotifier,
-                pageController: _pageController,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

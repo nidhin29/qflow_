@@ -4,6 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:qflow/application/member/member_cubit.dart';
 import 'package:qflow/application/member/member_state.dart' as ms;
+import 'package:qflow/application/appointment/appointment_cubit.dart';
+import 'package:qflow/application/appointment/appointment_state.dart' as app_state;
+import 'package:qflow/Presentation/Core/empty_state_widget.dart';
+import 'package:qflow/Presentation/Core/error_state_widget.dart';
 import 'package:qflow/domain/member/member_model.dart';
 import 'package:qflow/application/profile/profile_cubit.dart';
 import 'package:qflow/application/profile/profile_state.dart';
@@ -12,9 +16,13 @@ import 'package:qflow/domain/core/di/injection.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
 import 'package:qflow/domain/auth/auth_service.dart';
 import 'package:qflow/Presentation/Auth/sign_in.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qflow/Presentation/Profile/location_page.dart';
+import 'package:qflow/Presentation/Profile/profile_shimmer.dart';
+import 'package:qflow/Presentation/Core/shimmer_loading.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -132,6 +140,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                     clientFailure: (_) => 'Network Error',
                     serverFailure: (_) => 'Server Error',
                     authFailure: (_) => 'Session Expired',
+                    serverError: (e) => e.message ?? 'Server error',
                   )),
                   backgroundColor: Colors.red,
                 ),
@@ -175,7 +184,20 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
 
           return Scaffold(
             body: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          const ShimmerWidget.circular(width: 80, height: 80),
+                          const SizedBox(height: 20),
+                          const ShimmerWidget.rectangular(height: 30, width: 200),
+                          const SizedBox(height: 40),
+                          const ProfileHistoryShimmer(),
+                        ],
+                      ),
+                    ),
+                  )
                 : Stack(
                     children: [
                       // Gradient Background
@@ -360,13 +382,15 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                       ? CachedNetworkImage(
                           imageUrl: user.profileImageUrl!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              user.thumbnailUrl != null
-                                  ? CachedNetworkImage(
-                                      imageUrl: user.thumbnailUrl!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(color: Colors.grey),
+                          placeholder: (context, url) => Container(
+                            color: const Color(0xFFF6F6F6),
+                            child: user.thumbnailUrl != null
+                                ? Image(
+                                    image: CachedNetworkImageProvider(user.thumbnailUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : const Icon(Icons.person, color: Colors.grey),
+                          ),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error),
                         )
@@ -467,36 +491,9 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
           ),
           kheight20,
           ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size(325.w, 41.h),
-              backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Clear History",
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color: Colors.black,
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14.sp,
-                  color: Colors.black,
-                ),
-              ],
-            ),
-          ),
-          kheight20,
-          ElevatedButton(
             onPressed: () {
               getIt<IAuthService>().logout().then((_) {
+                if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const SignInScreen()),
                   (route) => false,
@@ -547,6 +544,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                       serverFailure: (_) => 'Server Error. Reverting changes...',
                       clientFailure: (_) => 'Connection Error. Reverting changes...',
                       authFailure: (_) => 'Authentication Error. Reverting changes...',
+                      serverError: (e) => e.message ?? 'Server error',
                     ),
                   ),
                   backgroundColor: Colors.redAccent,
@@ -559,7 +557,14 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
       },
       builder: (context, state) {
         if (state.isLoading && state.members.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 31.w),
+            itemCount: 5,
+            separatorBuilder: (context, index) => const GradientDivider(thickness: 1.0),
+            itemBuilder: (context, index) => const MemberListItemShimmer(),
+          );
         }
 
         return SingleChildScrollView(
@@ -620,7 +625,118 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildHistoryTab(Function() onTap, UserModel user) {
-    return const Center(child: Text("Appointment History (Coming Soon)"));
+    return BlocBuilder<AppointmentCubit, app_state.AppointmentState>(
+      builder: (context, state) {
+        if (state.isLoading && state.pastAppointments.isEmpty) {
+          return const ProfileHistoryShimmer();
+        }
+
+        if (state.pastAppointments.isEmpty) {
+          return state.failureOrSuccessOption.fold(
+            () => SizedBox(
+              height: 300.h,
+              child: const EmptyStateWidget(
+                title: 'No History',
+                description: 'You haven’t completed any appointments yet.',
+              ),
+            ),
+            (either) => either.fold(
+              (failure) => SizedBox(
+                height: 300.h,
+                child: ErrorStateWidget(
+                  errorMessage: failure.map(
+                    clientFailure: (_) => 'Check your connection.',
+                    authFailure: (_) => 'Session expired.',
+                    serverFailure: (_) => 'Unable to load history.',
+                    serverError: (e) => e.message ?? 'History error.',
+                  ),
+                  onRetry: () => context.read<AppointmentCubit>().getPastAppointments(),
+                ),
+              ),
+              (_) => SizedBox(
+                height: 300.h,
+                child: const EmptyStateWidget(
+                  title: 'No History',
+                  description: 'You haven’t completed any appointments yet.',
+                ),
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          shrinkWrap: true,
+          padding: EdgeInsets.symmetric(horizontal: 31.w, vertical: 20.h),
+          itemCount: state.pastAppointments.length,
+          separatorBuilder: (context, index) => const GradientDivider(
+            thickness: 1.0,
+          ),
+          itemBuilder: (context, index) {
+            final appointment = state.pastAppointments[index];
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50.w,
+                    height: 50.w,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.local_hospital_outlined,
+                          color: Color(0xFF1A3355)),
+                    ),
+                  ),
+                  SizedBox(width: 15.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment.hospitalName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            textStyle: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              DateFormat('dd MMM yyyy').format(
+                                  DateTime.parse(appointment.appointmentDate)),
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          appointment.patientName,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildEditUI(Function() onTap, BuildContext context, UserModel user,
@@ -640,7 +756,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                       width: 79.w,
                       height: 74.h,
                     ),
-                    Container(
+                    SizedBox(
                       width: 69.w,
                       height: 69.h,
                       child: ClipRRect(
@@ -649,6 +765,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
                             ? Image.file(
                                 File(state.profileImagePath!),
                                 fit: BoxFit.cover,
+                                key: ValueKey(state.profileImagePath),
                               )
                             : user.profileImageUrl != null
                                 ? CachedNetworkImage(
@@ -875,7 +992,7 @@ class _SmoothCarouselProfileScreenState extends State<ProfileScreen> {
         SizedBox(
           height: 35.h,
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             style: TextStyle(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w400,

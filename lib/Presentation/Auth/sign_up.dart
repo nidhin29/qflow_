@@ -38,6 +38,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     clientFailure: (_) => 'Client Failure',
                     authFailure: (_) => 'Auth Failure',
                     serverFailure: (_) => 'Server Error',
+                    serverError: (e) => e.message ?? 'Server Error',
                   ))),
                 );
               },

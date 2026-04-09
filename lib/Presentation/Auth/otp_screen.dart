@@ -50,7 +50,14 @@ class _OTPScreenState extends State<OTPScreen> {
             (either) => either.fold(
               (failure) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid OTP')),
+                  SnackBar(
+                    content: Text(failure.map(
+                      clientFailure: (_) => 'Network Error',
+                      authFailure: (_) => 'Invalid OTP',
+                      serverFailure: (_) => 'Server Error',
+                      serverError: (e) => e.message ?? 'Invalid OTP',
+                    )),
+                  ),
                 );
               },
               (_) {
@@ -146,7 +153,7 @@ class _OTPScreenState extends State<OTPScreen> {
                   ),
                   SizedBox(height: 40.h),
                   if (state.isSubmitting)
-                    const Center(child: CircularProgressIndicator(color: Colors.black))
+                    const Center(child: CircularProgressIndicator())
                   else
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12.w),

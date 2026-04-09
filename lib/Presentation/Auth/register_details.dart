@@ -23,7 +23,14 @@ class RegisterDetailsScreen extends StatelessWidget {
             (either) => either.fold(
               (failure) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Failed to save details')),
+                  SnackBar(
+                    content: Text(failure.map(
+                      clientFailure: (_) => 'Network Error',
+                      authFailure: (_) => 'Registration session expired',
+                      serverFailure: (_) => 'Server Error',
+                      serverError: (e) => e.message ?? 'Failed to save details',
+                    )),
+                  ),
                 );
               },
               (_) {
@@ -83,16 +90,23 @@ class RegisterDetailsScreen extends StatelessWidget {
                       },
                       child: Stack(
                         children: [
-                          CircleAvatar(
-                            radius: 50.r,
-                            backgroundColor: Colors.black12,
-                            backgroundImage: state.profileImagePath != null
-                                ? FileImage(File(state.profileImagePath!))
-                                : null,
-                            child: state.profileImagePath == null
-                                ? Icon(Icons.person,
-                                    size: 50.r, color: Colors.black26)
-                                : null,
+                          Container(
+                            width: 100.r,
+                            height: 100.r,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black12,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(50.r),
+                              child: state.profileImagePath != null
+                                  ? Image.file(
+                                      File(state.profileImagePath!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(Icons.person,
+                                      size: 50.r, color: Colors.black26),
+                            ),
                           ),
                           Positioned(
                             bottom: 0,
@@ -198,7 +212,7 @@ class RegisterDetailsScreen extends StatelessWidget {
                   SizedBox(height: 40.h),
                   if (state.isSubmitting)
                     const Center(
-                        child: CircularProgressIndicator(color: Colors.black))
+                        child: CircularProgressIndicator())
                   else
                     TextButton(
                       onPressed: () =>

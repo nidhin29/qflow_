@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
@@ -18,14 +20,27 @@ class AppointmentRepository implements IAppointmentService {
     try {
       final response = await _dio.post(
         '/appointments/book-appointment',
-        data: appointment.toMap(),
+        data: {
+          'hospital_id': appointment.hospitalId,
+          'department': appointment.department,
+          'patient_name': appointment.patientName,
+          'appointment_date': appointment.appointmentDate,
+          'appointment_time': appointment.appointmentTime,
+        },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return right(unit);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: response.data['message'] ?? 'Booking failed'));
       }
+    } on DioException catch (e) {
+      log('AppointmentRepository bookAppointment Error: ${e.toString()}');
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message: e.response?.data?['message'] ?? 'Network error occurred'));
     } catch (e) {
       return left(const MainFailure.clientFailure());
     }
@@ -42,15 +57,59 @@ class AppointmentRepository implements IAppointmentService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> dataList = response.data['data'] ?? [];
+        final List<dynamic> dataList = response.data['data']?['docs'] ?? [];
+        final appointments = dataList
+            .map((e) => AppointmentModel.fromMap(e as Map<String, dynamic>))
+            .toList();
+        log(appointments.toString());
+        return right(appointments);
+      } else {
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message:
+                response.data['message'] ?? 'Failed to fetch appointments'));
+      }
+    } on DioException catch (e) {
+      log('AppointmentRepository getUserAppointments Error: ${e.toString()}');
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message:
+              e.response?.data?['message'] ?? 'Failed to load appointments'));
+    } catch (e) {
+      log(e.toString());
+      return left(const MainFailure.clientFailure());
+    }
+  }
+
+  @override
+  Future<Either<MainFailure, List<AppointmentModel>>> searchAppointments({
+    required String query,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/appointments/search-user-appointments',
+        queryParameters: {'q': query},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> dataList = response.data['data']?['docs'] ?? [];
         final appointments = dataList
             .map((e) => AppointmentModel.fromMap(e as Map<String, dynamic>))
             .toList();
         return right(appointments);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: response.data['message'] ?? 'Search failed'));
       }
+    } on DioException catch (e) {
+      log('AppointmentRepository searchAppointments Error: ${e.toString()}');
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message:
+              e.response?.data?['message'] ?? 'Failed to search appointments'));
     } catch (e) {
+      log(e.toString());
       return left(const MainFailure.clientFailure());
     }
   }

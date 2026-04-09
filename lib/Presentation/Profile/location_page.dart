@@ -74,30 +74,30 @@ class _LocationPageState extends State<LocationPage> {
                   context.read<ProfileCubit>().updateProfile(user: updatedUser);
                   Navigator.pop(context);
                 },
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50.h),
-                backgroundColor: Colors.greenAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.r),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50.h),
+                  backgroundColor: Colors.greenAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: Text(
-                "Save Changes",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14.sp,
+                child: Text(
+                  "Save Changes",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 30.h),
-          ],
+              SizedBox(height: 30.h),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDialogTextField(String label, TextEditingController controller) {
     return Column(

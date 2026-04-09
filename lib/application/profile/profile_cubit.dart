@@ -5,12 +5,15 @@ import 'package:qflow/application/profile/profile_state.dart';
 import 'package:qflow/domain/core/failures.dart';
 import 'package:qflow/domain/user/user_service.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
+import 'package:qflow/domain/auth/app_session.dart';
 
 @injectable
 class ProfileCubit extends Cubit<ProfileState> {
   final IUserService _userService;
+  final AppSession _appSession;
 
-  ProfileCubit(this._userService) : super(ProfileState.initial());
+  ProfileCubit(this._userService, this._appSession)
+      : super(ProfileState.initial());
 
   Future<void> getUserDetails() async {
     emit(state.copyWith(isLoading: true, failureOrSuccessOption: none()));
@@ -22,10 +25,20 @@ class ProfileCubit extends Cubit<ProfileState> {
         isLoading: false,
         failureOrSuccessOption: some(left<MainFailure, Unit>(f)),
       ),
-      (user) => state.copyWith(
-        isLoading: false,
-        userOption: some(user),
-      ),
+      (user) {
+        _appSession.saveProfileInfo(
+          firstName: user.firstName,
+          lastName: user.lastName,
+        );
+        _appSession.saveLocation(
+          city: user.city,
+          district: user.district,
+        );
+        return state.copyWith(
+          isLoading: false,
+          userOption: some(user),
+        );
+      },
     ));
   }
 

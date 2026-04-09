@@ -27,6 +27,7 @@ class UserRepository implements IUserService {
         final userData = data['user'] ?? data;
         final user = UserModel.fromMap(userData as Map<String, dynamic>);
         _session.saveUsername(username: user.username);
+        _session.saveLocation(city: user.city, district: user.district);
         return right(user);
       } else {
         return left(const MainFailure.serverFailure());
@@ -83,7 +84,10 @@ class UserRepository implements IUserService {
         final data = response.data['data'] ?? response.data;
         final userData = data['user'] ?? data;
         final confirmedUsername = userData['username'] ?? user.username;
+        final confirmedCity = userData['city'] ?? user.city;
+        final confirmedDistrict = userData['district'] ?? user.district;
         _session.saveUsername(username: confirmedUsername);
+        _session.saveLocation(city: confirmedCity, district: confirmedDistrict);
         
         return right(unit);
       } else {
@@ -137,7 +141,7 @@ class UserRepository implements IUserService {
       );
 
       if (response.statusCode == 200) {
-    
+        _session.saveLocation(city: user.city, district: user.district);
         return right(unit);
       } else {
         return left(const MainFailure.serverFailure());

@@ -10,4 +10,8 @@ abstract class IAppointmentService {
   Future<Either<MainFailure, List<AppointmentModel>>> getUserAppointments({
     required String type, // 'upcoming' or 'past'
   });
+
+  Future<Either<MainFailure, List<AppointmentModel>>> searchAppointments({
+    required String query,
+  });
 }

@@ -14,6 +14,10 @@ class AppointmentModel {
   final String patientName;
   final String? status;
   final String? patientId;
+  // Live Queue Metrics
+  final int? currentlyServing;
+  final int? patientsAhead;
+  final String? estimatedServiceTime;
 
   const AppointmentModel({
     this.id,
@@ -29,6 +33,9 @@ class AppointmentModel {
     required this.patientName,
     this.status,
     this.patientId,
+    this.currentlyServing,
+    this.patientsAhead,
+    this.estimatedServiceTime,
   });
 
   @override
@@ -37,20 +44,25 @@ class AppointmentModel {
   }
 
   factory AppointmentModel.fromMap(Map<String, dynamic> data) {
+    final hospitalDetails = data['hospitalDetails'] as Map<String, dynamic>?;
+    
     return AppointmentModel(
       id: data['id'] as String?,
-      hospitalId: data['hospital_id'] ?? data['hospitalId'] ?? '',
-      hospitalName: data['hospital_name'] ?? data['hospitalName'] ?? 'Qflow Hospital',
-      hospitalAddress: data['hospital_address'] ?? data['hospitalAddress'] ?? 'Hospital Address',
-      appointmentDate: data['appointment_date'] ?? data['appointmentDate'] ?? '',
-      appointmentTime: data['appointment_time'] ?? data['appointmentTime'] ?? '',
-      estimatedTime: data['estimated_time'] ?? data['estimatedTime'] ?? 'Pending',
-      tokenNumber: data['token_number']?.toString() ?? data['tokenNumber']?.toString() ?? 'TBD',
+      hospitalId: data['hospital_id'] ?? hospitalDetails?['_id'] ?? '',
+      hospitalName: data['hospital_name'] ?? hospitalDetails?['name'] ?? '',
+      hospitalAddress: data['hospital_address'] ?? hospitalDetails?['address'] ?? '',
+      appointmentDate: data['appointment_date'] ?? '',
+      appointmentTime: data['appointment_time'] ?? '',
+      estimatedTime: data['estimated_time'] ?? 'Pending',
+      tokenNumber: data['token_number']?.toString() ?? 'TBD',
       department: data['department'] ?? '',
-      departmentName: data['department_name'] ?? data['departmentName'] ?? data['department'] ?? 'General',
-      patientName: data['patient_name'] ?? data['patientName'] ?? 'Patient',
+      departmentName: data['department_name'] ?? data['department'] ?? '',
+      patientName: data['patient_name'] ?? '',
       status: data['status'] as String?,
-      patientId: data['patient_id'] ?? data['patientId'] as String?,
+      patientId: data['patient_id'] as String?,
+      currentlyServing: data['currently_serving'] as int?,
+      patientsAhead: data['patients_ahead'] as int?,
+      estimatedServiceTime: data['estimated_service_time'] as String?,
     );
   }
 
@@ -69,6 +81,9 @@ class AppointmentModel {
       'patient_name': patientName,
       if (status != null) 'status': status,
       if (patientId != null) 'patient_id': patientId,
+      if (currentlyServing != null) 'currently_serving': currentlyServing,
+      if (patientsAhead != null) 'patients_ahead': patientsAhead,
+      if (estimatedServiceTime != null) 'estimated_service_time': estimatedServiceTime,
     };
   }
 
@@ -94,6 +109,9 @@ class AppointmentModel {
     String? patientName,
     String? status,
     String? patientId,
+    int? currentlyServing,
+    int? patientsAhead,
+    String? estimatedServiceTime,
   }) {
     return AppointmentModel(
       id: id ?? this.id,
@@ -109,6 +127,9 @@ class AppointmentModel {
       patientName: patientName ?? this.patientName,
       status: status ?? this.status,
       patientId: patientId ?? this.patientId,
+      currentlyServing: currentlyServing ?? this.currentlyServing,
+      patientsAhead: patientsAhead ?? this.patientsAhead,
+      estimatedServiceTime: estimatedServiceTime ?? this.estimatedServiceTime,
     );
   }
 }
