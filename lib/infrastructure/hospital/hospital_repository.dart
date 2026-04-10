@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
@@ -6,6 +6,7 @@ import 'package:qflow/domain/core/failures.dart';
 import 'package:qflow/domain/hospital/hospital_model.dart';
 import 'package:qflow/domain/hospital/i_hospital_service.dart';
 import 'package:qflow/domain/hospital/location_model.dart';
+import 'package:qflow/infrastructure/core/api_utils.dart';
 
 @LazySingleton(as: IHospitalService)
 class HospitalRepository implements IHospitalService {
@@ -39,15 +40,15 @@ class HospitalRepository implements IHospitalService {
       } else {
         return left(MainFailure.serverError(
             code: response.statusCode,
-            message: response.data['message'] ?? 'Failed to fetch hospitals'));
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to fetch hospitals'
+                : 'Failed to fetch hospitals'));
       }
     } on DioException catch (e) {
-      log('HospitalRepository getHospitalsByLocation Error: ${e.toString()}');
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: e.response?.data?['message'] ?? 'Network error occurred'));
+          message: getErrorMessage(e, 'Network error occurred')));
     } catch (e) {
-      log('HospitalRepository getHospitalsByLocation Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -65,15 +66,15 @@ class HospitalRepository implements IHospitalService {
       } else {
         return left(MainFailure.serverError(
             code: response.statusCode,
-            message: response.data['message'] ?? 'Failed to load hospital details'));
+            message: (response.data is Map) 
+                ? response.data['message'] ?? 'Failed to load hospital details'
+                : 'Failed to load hospital details'));
       }
     } on DioException catch (e) {
-      log('HospitalRepository getHospitalById Error: ${e.toString()}');
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: e.response?.data?['message'] ?? 'Failed to load details'));
+          message: getErrorMessage(e, 'Failed to load details')));
     } catch (e) {
-      log('HospitalRepository getHospitalById Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -101,12 +102,10 @@ class HospitalRepository implements IHospitalService {
             message: response.data['message'] ?? 'Failed to search locations'));
       }
     } on DioException catch (e) {
-      log('HospitalRepository searchLocations Error: ${e.toString()}');
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: e.response?.data?['message'] ?? 'Connection error'));
+          message: getErrorMessage(e, 'Connection error')));
     } catch (e) {
-      log('HospitalRepository searchLocations Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -146,12 +145,10 @@ class HospitalRepository implements IHospitalService {
             message: response.data['message'] ?? 'Search failed'));
       }
     } on DioException catch (e) {
-      log('HospitalRepository searchHospitals Error: ${e.toString()}');
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: e.response?.data?['message'] ?? 'Failed to search hospitals'));
+          message: getErrorMessage(e, 'Failed to search hospitals')));
     } catch (e) {
-      log('HospitalRepository searchHospitals Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }

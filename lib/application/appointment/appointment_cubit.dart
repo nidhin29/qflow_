@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -26,7 +26,7 @@ class AppointmentCubit extends Cubit<AppointmentState> {
   }
 
   void _handleSocketUpdate(Map<String, dynamic> data) {
-    log('AppointmentCubit: Received update: $data');
+
     // Payload format: { "appointment_date": "2026-04-10", "department": "Cardiology", "currently_serving": 5 }
     final String? hospitalId = data['hospital_id'];
     final String? department = data['department'];
@@ -40,7 +40,8 @@ class AppointmentCubit extends Cubit<AppointmentState> {
         ? data['patients_ahead'] as int
         : int.tryParse(data['patients_ahead']?.toString() ?? '');
     
-    final String? estimatedTime = data['estimated_time'] ?? data['estimated_service_time'];
+    final String? estimatedTime =
+        data['estimated_time']?.toString() ?? data['estimated_service_time']?.toString();
 
     // Update upcoming appointments matching the notification criteria
     final updatedUpcoming = state.upcomingAppointments.map((appt) {
@@ -109,6 +110,7 @@ class AppointmentCubit extends Cubit<AppointmentState> {
         emit(state.copyWith(
           isLoading: false,
           upcomingAppointments: list,
+          hasInitialized: true,
           failureOrSuccessOption: none(),
         ));
       },
@@ -128,6 +130,7 @@ class AppointmentCubit extends Cubit<AppointmentState> {
       (list) => state.copyWith(
         isLoading: false,
         pastAppointments: list,
+        hasInitialized: true,
         failureOrSuccessOption: none(),
       ),
     ));
@@ -186,6 +189,12 @@ class AppointmentCubit extends Cubit<AppointmentState> {
       searchResults: [],
       failureOrSuccessOption: none(),
     ));
+  }
+
+  void clear() {
+    _socketSubscription?.cancel();
+    _socketService.disconnect();
+    emit(AppointmentState.initial());
   }
 
   @override

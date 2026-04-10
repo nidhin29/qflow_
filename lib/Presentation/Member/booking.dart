@@ -12,6 +12,7 @@ import 'package:qflow/application/member/member_state.dart' as ms;
 import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 import 'package:qflow/domain/auth/app_session.dart';
 import 'package:qflow/Presentation/Member/member_shimmer.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class BookingPage extends StatelessWidget {
   final String hospitalId;
@@ -19,6 +20,25 @@ class BookingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Hospital check
+      final hospitalState = context.read<HospitalCubit>().state;
+      final isAlreadyLoaded = hospitalState.selectedHospital.fold(
+        () => false,
+        (h) => h.id == hospitalId,
+      );
+
+      if (!isAlreadyLoaded && !hospitalState.isLoading) {
+        context.read<HospitalCubit>().getHospitalById(hospitalId: hospitalId);
+      }
+
+      // Members check
+      final memberState = context.read<MemberCubit>().state;
+      if (memberState.members.isEmpty && !memberState.isLoading) {
+        context.read<MemberCubit>().getMembers();
+      }
+    });
+
     ValueNotifier<String?> selectedDepartment = ValueNotifier<String?>(null);
     ValueNotifier<String?> selectedPatient = ValueNotifier<String?>(null);
     ValueNotifier<TimeOfDay> selectedTime =
@@ -83,8 +103,25 @@ class BookingPage extends StatelessWidget {
       }
     }
 
-    return BlocBuilder<HospitalCubit, HospitalState>(
-      builder: (context, hospitalState) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AppointmentCubit, AppointmentState>(
+          listener: (context, state) {
+            state.failureOrSuccessOption.fold(
+              () => null,
+              (either) => either.fold(
+                (f) => showErrorSnackBar(context, f),
+                (_) {
+                  showSuccessSnackBar(context, 'Booking Successful');
+                  Navigator.of(context).pop();
+                },
+              ),
+            );
+          },
+        ),
+      ],
+      child: BlocBuilder<HospitalCubit, HospitalState>(
+        builder: (context, hospitalState) {
         return hospitalState.selectedHospital.fold(
           () => const Scaffold(
             body: Center(child: HospitalCardShimmer()),
@@ -336,7 +373,8 @@ class BookingPage extends StatelessWidget {
                                                     MainAxisAlignment
                                                         .spaceBetween,
                                                 children: [
-                                                  Text(value.format(context),
+                                                  Text(
+                                                      "${value.hourOfPeriod == 0 ? 12 : value.hourOfPeriod}:${value.minute.toString().padLeft(2, '0')}",
                                                       style: GoogleFonts.dmSans(
                                                           fontSize: 16.sp,
                                                           fontWeight:
@@ -346,15 +384,24 @@ class BookingPage extends StatelessWidget {
                                                       height: 20,
                                                       color: const Color(
                                                           0xFFD2D2D2)),
-                                                  Text(
-                                                      value.period ==
-                                                              DayPeriod.am
-                                                          ? "AM"
-                                                          : "PM",
-                                                      style: GoogleFonts.dmSans(
-                                                          fontSize: 13.sp,
-                                                          fontWeight:
-                                                              FontWeight.w500)),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      final current = selectedTime.value;
+                                                      selectedTime.value = TimeOfDay(
+                                                        hour: (current.hour + 12) % 24,
+                                                        minute: current.minute,
+                                                      );
+                                                    },
+                                                    child: Text(
+                                                        value.period ==
+                                                                DayPeriod.am
+                                                            ? "AM"
+                                                            : "PM",
+                                                        style: GoogleFonts.dmSans(
+                                                            fontSize: 13.sp,
+                                                            fontWeight:
+                                                                FontWeight.w500)),
+                                                  ),
                                                 ],
                                               ),
                                             );
@@ -397,30 +444,7 @@ class BookingPage extends StatelessWidget {
                             ),
                             SizedBox(height: 22.h),
                             // Book Now Button
-                            BlocConsumer<AppointmentCubit, AppointmentState>(
-                              listener: (context, state) {
-                                state.failureOrSuccessOption.fold(
-                                  () => null,
-                                  (either) => either.fold(
-                                    (f) => ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                            content: Text(f.map(
-                                      clientFailure: (_) => 'Network Error',
-                                      authFailure: (_) => 'Session Expired',
-                                      serverFailure: (_) => 'Server Error',
-                                      serverError: (e) =>
-                                          e.message ?? 'Booking Failed',
-                                    )))),
-                                    (_) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                              content:
-                                                  Text('Booking Successful')));
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                );
-                              },
+                            BlocBuilder<AppointmentCubit, AppointmentState>(
                               builder: (context, state) {
                                 return ElevatedButton(
                                   onPressed: state.isLoading
@@ -456,6 +480,27 @@ class BookingPage extends StatelessWidget {
                                               ? currentUserName
                                               : selectedPatient.value!;
 
+                                          // Resolve patient ID
+                                          String? pId;
+                                          if (selectedPatient.value == "Self" ||
+                                              selectedPatient.value ==
+                                                  currentUserName) {
+                                            pId = appSession.userId;
+                                          } else {
+                                            try {
+                                              final memberState = context
+                                                  .read<MemberCubit>()
+                                                  .state;
+                                              final member = memberState.members
+                                                  .firstWhere((m) =>
+                                                      m.name ==
+                                                      selectedPatient.value);
+                                              pId = member.id;
+                                            } catch (_) {
+                                              pId = null;
+                                            }
+                                          }
+
                                           final appointment = AppointmentModel(
                                             hospitalId: hospitalId,
                                             hospitalName: hospital.name,
@@ -464,8 +509,8 @@ class BookingPage extends StatelessWidget {
                                             appointmentDate: selectedDate.value
                                                 .toIso8601String()
                                                 .split('T')[0],
-                                            appointmentTime: selectedTime.value
-                                                .format(context),
+                                            appointmentTime:
+                                                '${selectedTime.value.hourOfPeriod == 0 ? 12 : selectedTime.value.hourOfPeriod}:${selectedTime.value.minute.toString().padLeft(2, '0')} ${selectedTime.value.period == DayPeriod.am ? 'AM' : 'PM'}',
                                             estimatedTime: 'Pending',
                                             tokenNumber: 'TBD',
                                             department:
@@ -473,6 +518,7 @@ class BookingPage extends StatelessWidget {
                                             departmentName:
                                                 selectedDepartment.value!,
                                             patientName: pName,
+                                            patientId: pId,
                                           );
                                           context
                                               .read<AppointmentCubit>()
@@ -515,8 +561,9 @@ class BookingPage extends StatelessWidget {
             },
           );
         },
-      );
-    }
+      ),
+    );
+  }
 
   Widget _buildLabel(String text) {
     return Text(

@@ -90,4 +90,8 @@ class MemberCubit extends Cubit<MemberState> {
       },
     );
   }
+
+  void clear() {
+    emit(MemberState.initial());
+  }
 }

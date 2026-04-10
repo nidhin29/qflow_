@@ -1,10 +1,11 @@
-import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:qflow/domain/core/failures.dart';
 import 'package:qflow/domain/member/member_model.dart';
 import 'package:qflow/domain/member/member_service.dart';
+import 'package:qflow/infrastructure/core/api_utils.dart';
 
 @LazySingleton(as: IMemberService)
 class MemberRepository implements IMemberService {
@@ -16,7 +17,7 @@ class MemberRepository implements IMemberService {
   Future<Either<MainFailure, List<MemberModel>>> getMembers() async {
     try {
       final response = await _dio.get('/members/get-members');
-      log(response.toString());
+
       if (response.statusCode == 200) {
         final List<dynamic> data =
             response.data['data'] ?? response.data['members'] ?? [];
@@ -25,10 +26,17 @@ class MemberRepository implements IMemberService {
             .toList();
         return right(members);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to fetch members'
+                : 'Failed to fetch members'));
       }
+    } on DioException catch (e) {
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message: getErrorMessage(e, 'Failed to load members')));
     } catch (e) {
-      log('MemberRepository (getMembers) Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -38,7 +46,6 @@ class MemberRepository implements IMemberService {
     required MemberModel member,
   }) async {
     try {
-      // Switch to standard JSON data
       final response = await _dio.post(
         '/members/add-member',
         data: member.toMap(),
@@ -47,10 +54,17 @@ class MemberRepository implements IMemberService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return right(unit);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to add member'
+                : 'Failed to add member'));
       }
+    } on DioException catch (e) {
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message: getErrorMessage(e, 'Failed to add member')));
     } catch (e) {
-      log('MemberRepository (addMember) Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -60,16 +74,23 @@ class MemberRepository implements IMemberService {
     try {
       final response = await _dio.delete(
         '/members/delete-member',
-        data: {'_id': id}, // Including both for compatibility
+        data: {'_id': id},
       );
 
       if (response.statusCode == 200) {
         return right(unit);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to delete member'
+                : 'Failed to delete member'));
       }
+    } on DioException catch (e) {
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message: getErrorMessage(e, 'Failed to delete member')));
     } catch (e) {
-      log('MemberRepository (deleteMember) Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }
@@ -80,7 +101,6 @@ class MemberRepository implements IMemberService {
   }) async {
     try {
       final Map<String, dynamic> updateData = member.toMap();
-      // Ensure the correct ID is passed for the update operation
       if (member.id != null) {
         updateData['_id'] = member.id;
       }
@@ -93,10 +113,17 @@ class MemberRepository implements IMemberService {
       if (response.statusCode == 200) {
         return right(unit);
       } else {
-        return left(const MainFailure.serverFailure());
+        return left(MainFailure.serverError(
+            code: response.statusCode,
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to update member'
+                : 'Failed to update member'));
       }
+    } on DioException catch (e) {
+      return left(MainFailure.serverError(
+          code: e.response?.statusCode,
+          message: getErrorMessage(e, 'Failed to update member')));
     } catch (e) {
-      log('MemberRepository (updateMember) Error: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }

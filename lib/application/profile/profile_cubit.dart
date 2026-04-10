@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,10 +12,11 @@ import 'package:qflow/domain/auth/app_session.dart';
 @injectable
 class ProfileCubit extends Cubit<ProfileState> {
   final IUserService _userService;
-  final AppSession _appSession;
 
-  ProfileCubit(this._userService, this._appSession)
-      : super(ProfileState.initial());
+  ProfileCubit(this._userService, AppSession appSession)
+      : super(ProfileState.initial().copyWith(
+          userOption: optionOf(appSession.toUserModel()),
+        ));
 
   Future<void> getUserDetails() async {
     emit(state.copyWith(isLoading: true, failureOrSuccessOption: none()));
@@ -28,15 +29,6 @@ class ProfileCubit extends Cubit<ProfileState> {
         failureOrSuccessOption: some(left<MainFailure, Unit>(f)),
       ),
       (user) {
-        _appSession.saveProfileInfo(
-          firstName: user.firstName,
-          lastName: user.lastName,
-        );
-        _appSession.saveLocation(
-          city: user.city,
-          district: user.district,
-        );
-
         // Check and sync FCM token if null or empty
         if (user.fcmToken == null || user.fcmToken!.isEmpty) {
           _syncFcmToken();
@@ -45,6 +37,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         return state.copyWith(
           isLoading: false,
           userOption: some(user),
+          failureOrSuccessOption: none(),
         );
       },
     ));
@@ -57,12 +50,12 @@ class ProfileCubit extends Cubit<ProfileState> {
       await fcm.requestPermission();
       final token = await fcm.getToken();
       if (token != null) {
-        log('ProfileCubit: Syncing FCM Token: $token');
         await _userService.updateFcmToken(token);
       }
+
     } catch (e) {
-      log('ProfileCubit FCM Sync Error: ${e.toString()}');
     }
+
   }
 
   void profileImageChanged(String path) {
@@ -92,5 +85,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (failureOrSuccess.isRight()) {
       await getUserDetails();
     }
+  }
+
+  void clear() {
+    emit(ProfileState.initial());
   }
 }

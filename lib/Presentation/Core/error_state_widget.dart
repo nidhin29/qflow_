@@ -41,16 +41,21 @@ class ErrorStateWidget extends StatelessWidget {
                 color: const Color(0xFF1A3955),
               ),
             ),
-            SizedBox(height: 8.h),
-            Text(
-              errorMessage,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w400,
-                color: Colors.grey[600],
+            if (errorMessage.isNotEmpty && 
+                errorMessage != 'An unexpected error occurred' &&
+                errorMessage != 'Network error occurred')
+              Padding(
+                padding: EdgeInsets.only(top: 8.h),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey[600],
+                  ),
+                ),
               ),
-            ),
             SizedBox(height: 30.h),
             ElevatedButton.icon(
               onPressed: onRetry,

@@ -108,4 +108,8 @@ class HospitalCubit extends Cubit<HospitalState> {
       ),
     ));
   }
+
+  void clear() {
+    emit(HospitalState.initial());
+  }
 }

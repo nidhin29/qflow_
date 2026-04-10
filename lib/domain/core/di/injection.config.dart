@@ -96,8 +96,10 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i418.IUserService>(),
           gh<_i218.AppSession>(),
         ));
-    gh.factory<_i1028.RegisterDetailsCubit>(
-        () => _i1028.RegisterDetailsCubit(gh<_i418.IUserService>()));
+    gh.factory<_i1028.RegisterDetailsCubit>(() => _i1028.RegisterDetailsCubit(
+          gh<_i418.IUserService>(),
+          gh<_i218.AppSession>(),
+        ));
     gh.factory<_i226.OTPCubit>(() => _i226.OTPCubit(gh<_i116.IAuthService>()));
     gh.factory<_i466.SignInCubit>(
         () => _i466.SignInCubit(gh<_i116.IAuthService>()));

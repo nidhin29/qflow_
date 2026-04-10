@@ -55,10 +55,10 @@ class SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // 4. Ensure minimum splash time (2 seconds for animation)
+    // 4. Ensure minimum splash time (4 seconds for animation to fully play)
     final elapsed = DateTime.now().difference(startTime);
-    if (elapsed < const Duration(seconds: 2)) {
-      await Future.delayed(const Duration(seconds: 2) - elapsed);
+    if (elapsed < const Duration(seconds: 4)) {
+      await Future.delayed(const Duration(seconds: 4) - elapsed);
     }
 
     if (mounted) {

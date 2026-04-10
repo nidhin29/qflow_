@@ -15,18 +15,59 @@ import 'package:qflow/domain/auth/app_session.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qflow/Presentation/Core/empty_state_widget.dart';
 import 'package:qflow/Presentation/Core/error_state_widget.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class MemberScreen extends StatelessWidget {
   const MemberScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Profile check
+      final profileState = context.read<ProfileCubit>().state;
+      if (profileState.userOption.isNone() && !profileState.isLoading) {
+        context.read<ProfileCubit>().getUserDetails();
+      }
+
+      // Hospital check
+      final hospitalState = context.read<HospitalCubit>().state;
+      if (hospitalState.hospitals.isEmpty && !hospitalState.isLoading) {
+        final location = getIt<AppSession>().city ?? 'Chengannur';
+        context.read<HospitalCubit>().getHospitalsByLocation(location: location);
+      }
+    });
+
     ValueNotifier<bool> isSearching = ValueNotifier(false);
 
-    return Scaffold(
-      backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
-      body: SingleChildScrollView(
-        child: Padding(
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<HospitalCubit, HospitalState>(
+          listener: (context, state) {
+            state.failureOrSuccessOption.fold(
+              () => null,
+              (either) => either.fold(
+                (failure) => showErrorSnackBar(context, failure),
+                (success) => null,
+              ),
+            );
+          },
+        ),
+        BlocListener<ProfileCubit, ProfileState>(
+          listener: (context, state) {
+            state.failureOrSuccessOption.fold(
+              () => null,
+              (either) => either.fold(
+                (failure) => showErrorSnackBar(context, failure),
+                (success) => null,
+              ),
+            );
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
+        body: SingleChildScrollView(
+          child: Padding(
           padding: EdgeInsets.only(
             left: 25.w,
             right: 25.w,
@@ -53,13 +94,7 @@ class MemberScreen extends StatelessWidget {
                           children: [
                             BlocBuilder<ProfileCubit, ProfileState>(
                               builder: (context, profileState) {
-                                final city = profileState.userOption.fold(
-                                  () =>
-                                      getIt<AppSession>().city ?? 'Chengannur',
-                                  (user) => user.city.isEmpty
-                                      ? 'Chengannur'
-                                      : user.city,
-                                );
+                                final displayCity = getIt<AppSession>().displayLocation;
                                 return Column(
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.start,
@@ -80,7 +115,7 @@ class MemberScreen extends StatelessWidget {
                                                 pageBuilder: (context,
                                                         animation,
                                                         secondaryAnimation) =>
-                                                    SearchPage(
+                                                    const SearchPage(
                                                       label: 'Location',
                                                     ),
                                                 transitionsBuilder: (context,
@@ -123,7 +158,7 @@ class MemberScreen extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            city,
+                                            displayCity,
                                             style: GoogleFonts.ptSans(
                                               textStyle: TextStyle(
                                                 fontWeight: FontWeight.w700,
@@ -154,7 +189,7 @@ class MemberScreen extends StatelessWidget {
                                   Navigator.of(context).push(PageRouteBuilder(
                                       pageBuilder: (context, animation,
                                               secondaryAnimation) =>
-                                          SearchPage(
+                                          const SearchPage(
                                             label: 'Search',
                                           ),
                                       transitionsBuilder: (context, animation,
@@ -220,28 +255,7 @@ class MemberScreen extends StatelessWidget {
               kheight20,
               kheight15,
               kheight10,
-              BlocConsumer<HospitalCubit, HospitalState>(
-                listener: (context, state) {
-                  state.failureOrSuccessOption.fold(
-                    () => null,
-                    (either) => either.fold(
-                      (failure) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(failure.map(
-                              clientFailure: (_) => 'Network Error',
-                              authFailure: (_) => 'Session Expired',
-                              serverFailure: (_) => 'Server Error',
-                              serverError: (e) => e.message ?? 'Server error',
-                            )),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      },
-                      (_) => null,
-                    ),
-                  );
-                },
+              BlocBuilder<HospitalCubit, HospitalState>(
                 builder: (context, state) {
                   if (state.isLoading && state.hospitals.isEmpty) {
                     return SizedBox(
@@ -566,6 +580,7 @@ class MemberScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

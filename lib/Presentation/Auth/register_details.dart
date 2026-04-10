@@ -8,6 +8,7 @@ import 'package:qflow/application/auth/register_details/register_details_cubit.d
 import 'package:qflow/application/auth/register_details/register_details_state.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class RegisterDetailsScreen extends StatelessWidget {
   const RegisterDetailsScreen({super.key});
@@ -21,18 +22,7 @@ class RegisterDetailsScreen extends StatelessWidget {
           state.failureOrSuccessOption.fold(
             () => null,
             (either) => either.fold(
-              (failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(failure.map(
-                      clientFailure: (_) => 'Network Error',
-                      authFailure: (_) => 'Registration session expired',
-                      serverFailure: (_) => 'Server Error',
-                      serverError: (e) => e.message ?? 'Failed to save details',
-                    )),
-                  ),
-                );
-              },
+              (failure) => showErrorSnackBar(context, failure),
               (_) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const MainScreen()),

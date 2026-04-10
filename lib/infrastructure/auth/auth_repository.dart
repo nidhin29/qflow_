@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -58,14 +58,33 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        log('AuthRepository: Response data: ${response.data}');
+
         final data = response.data['data'];
         final access = data['accessToken'] ?? data['access_token'];
         final refresh = data['refreshToken'] ?? data['refresh_token'];
-        final username = data['username'] ?? data['fullName'] ?? '';
+        
+        // Extract user details
+        final user = data['user'] ?? data;
+        final username = user['username'] ?? user['fullName'] ?? '';
+        final firstName = user['first_name'] ?? user['firstName'] ?? '';
+        final lastName = user['last_name'] ?? user['lastName'] ?? '';
+        final city = user['city'] ?? '';
+        final district = user['district'] ?? '';
+        final userId = (user['id'] ?? user['id'])?.toString();
         
         await _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
-        _session.username = username;
+        await _session.saveUsername(username: username);
+        
+        if (userId != null) {
+          await _session.saveProfileInfo(
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+          );
+        }
+        if (city.isNotEmpty || district.isNotEmpty) {
+          await _session.saveLocation(city: city, district: district);
+        }
 
         if (response.statusCode == 201) {
           return right(AuthSuccess.incomplete);
@@ -107,14 +126,33 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        log('AuthRepository: Google Login Response: ${response.data}');
+
         final data = response.data['data'];
         final access = data['accessToken'] ?? data['access_token'];
         final refresh = data['refreshToken'] ?? data['refresh_token'];
-        final username = data['username'] ?? data['fullName'] ?? '';
+        
+        // Extract user details
+        final user = data['user'] ?? data;
+        final username = user['username'] ?? user['fullName'] ?? '';
+        final firstName = user['first_name'] ?? user['firstName'] ?? '';
+        final lastName = user['last_name'] ?? user['lastName'] ?? '';
+        final city = user['city'] ?? '';
+        final district = user['district'] ?? '';
+        final userId = (user['id'] ?? user['id'])?.toString();
 
         await _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
-        _session.username = username;
+        await _session.saveUsername(username: username);
+
+        if (userId != null) {
+          await _session.saveProfileInfo(
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+          );
+        }
+        if (city.isNotEmpty || district.isNotEmpty) {
+          await _session.saveLocation(city: city, district: district);
+        }
 
         if (response.statusCode == 201) {
           return right(AuthSuccess.incomplete);
@@ -160,20 +198,6 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('AuthRepository: Verify OTP Response: ${response.data}');
-        final data = response.data['data'] ?? response.data;
-        final access = data['accessToken'] ?? data['access_token'];
-        final refresh = data['refreshToken'] ?? data['refresh_token'];
-        final username = data['username'];
-
-        if (access != null && refresh != null) {
-          await _session.saveTokens(access: access, refresh: refresh);
-          if (username != null) _session.username = username;
-          log('AuthRepository: Tokens saved successfully');
-        } else {
-          log('AuthRepository: No tokens found in response data');
-        }
-
         return right(unit);
       } else {
         return left(const MainFailure.authFailure());
@@ -231,25 +255,31 @@ class AuthRepository implements IAuthService {
   @override
   Future<Either<MainFailure, Unit>> logout() async {
     try {
-      // 1. Sign out from Google if applicable
-      final googleSignIn = GoogleSignIn(
-        serverClientId:
-            '796184189112-36k5b1r52phggfn5d7rpotmttvv2vhvm.apps.googleusercontent.com',
-      );
-      if (await googleSignIn.isSignedIn()) {
-        await googleSignIn.signOut();
-        log('AuthRepository: Signed out from Google');
-      }
+      // 1. Attempt to notify server of logout
+      final response = await _dio.post('/users/logout');
 
-      // 2. Attempt to notify server of logout
-      await _dio.post('/users/logout');
+      // 2. Only proceed if the server call was successful
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Sign out/Disconnect from Google
+        final googleSignIn = GoogleSignIn(
+          serverClientId:
+              '796184189112-36k5b1r52phggfn5d7rpotmttvv2vhvm.apps.googleusercontent.com',
+        );
+        if (await googleSignIn.isSignedIn()) {
+          await googleSignIn.disconnect();
+        }
+
+        // Clear local session data and memory
+        await _session.clear();
+        return right(unit);
+      } else {
+        // Log out failed at server level, preserve local session
+        return left(const MainFailure.serverFailure());
+      }
     } catch (e) {
-      log('AuthRepository: Logout process encountered issues, but clearing local session anyway: $e');
-    } finally {
-      // 3. ALWAYS clear local session data regardless of API success/failure
-      await _session.clear();
+      // If error (like 401 or network issue), keep the local session
+      return left(const MainFailure.serverFailure());
     }
-    return right(unit);
   }
 
   @override
@@ -259,7 +289,6 @@ class AuthRepository implements IAuthService {
           _session.refreshToken ?? await _storage.read(key: 'refresh_token');
 
       if (refreshToUse == null) {
-        log('AuthRepository: No refresh token available');
         return left(const MainFailure.authFailure());
       }
 
@@ -274,20 +303,19 @@ class AuthRepository implements IAuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('AuthRepository: Refresh response: ${response.data}');
         final data = response.data['data'] ?? response.data;
+
         final access = data['accessToken'] ?? data['access_token'];
         final refresh = data['refreshToken'] ?? data['refresh_token'];
 
         if (access != null && refresh != null) {
           await _session.saveTokens(access: access, refresh: refresh);
-          log('AuthRepository: Tokens refreshed successfully');
           return right(unit);
         }
+
       }
       return left(const MainFailure.authFailure());
     } catch (e) {
-      log('AuthRepository Error during Refresh Token: ${e.toString()}');
       return left(const MainFailure.clientFailure());
     }
   }

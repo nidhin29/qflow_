@@ -52,11 +52,11 @@ class ProfileHistoryShimmer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const ShimmerWidget.rectangular(height: 16, width: 150),
-                const ShimmerWidget.rectangular(height: 14, width: 80),
+                ShimmerWidget.rectangular(height: 16, width: 150),
+                ShimmerWidget.rectangular(height: 14, width: 80),
               ],
             ),
             SizedBox(height: 10.h),

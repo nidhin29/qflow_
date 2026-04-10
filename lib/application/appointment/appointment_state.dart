@@ -8,6 +8,7 @@ class AppointmentState {
   final List<AppointmentModel> searchResults;
   final bool isLoading;
   final bool isSearching;
+  final bool hasInitialized;
   final Option<Either<MainFailure, Unit>> failureOrSuccessOption;
 
   const AppointmentState({
@@ -16,6 +17,7 @@ class AppointmentState {
     required this.searchResults,
     required this.isLoading,
     required this.isSearching,
+    required this.hasInitialized,
     required this.failureOrSuccessOption,
   });
 
@@ -25,6 +27,7 @@ class AppointmentState {
         searchResults: [],
         isLoading: false,
         isSearching: false,
+        hasInitialized: false,
         failureOrSuccessOption: none(),
       );
 
@@ -34,6 +37,7 @@ class AppointmentState {
     List<AppointmentModel>? searchResults,
     bool? isLoading,
     bool? isSearching,
+    bool? hasInitialized,
     Option<Either<MainFailure, Unit>>? failureOrSuccessOption,
   }) {
     return AppointmentState(
@@ -42,6 +46,7 @@ class AppointmentState {
       searchResults: searchResults ?? this.searchResults,
       isLoading: isLoading ?? this.isLoading,
       isSearching: isSearching ?? this.isSearching,
+      hasInitialized: hasInitialized ?? this.hasInitialized,
       failureOrSuccessOption:
           failureOrSuccessOption ?? this.failureOrSuccessOption,
     );

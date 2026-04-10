@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:qflow/application/notification/notification_cubit.dart';
 import 'package:qflow/application/notification/notification_state.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
+import 'package:qflow/Presentation/Core/empty_state_widget.dart';
+import 'package:qflow/Presentation/Notification/notification_shimmer.dart';
 
 class NotificationPage extends StatelessWidget {
   const NotificationPage({super.key});
@@ -25,9 +28,26 @@ class NotificationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<NotificationCubit>().state;
+      if (state.notifications.isEmpty && !state.isLoading) {
+        context.read<NotificationCubit>().getNotifications();
+      }
+    });
+
+    return BlocListener<NotificationCubit, NotificationState>(
+      listener: (context, state) {
+        state.failureOrSuccessOption.fold(
+          () => null,
+          (either) => either.fold(
+            (failure) => showErrorSnackBar(context, failure),
+            (success) => null,
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -75,8 +95,7 @@ class NotificationPage extends StatelessWidget {
               child: BlocBuilder<NotificationCubit, NotificationState>(
                 builder: (context, state) {
                   if (state.isLoading && state.notifications.isEmpty) {
-                    return const Center(
-                        child: CircularProgressIndicator(color: Colors.black));
+                    return const NotificationShimmer();
                   }
 
                   if (state.notifications.isEmpty) {
@@ -87,11 +106,10 @@ class NotificationPage extends StatelessWidget {
                       child: ListView(
                         children: [
                           SizedBox(height: 100.h),
-                          Center(
-                            child: Text(
-                              'No notifications found',
-                              style: GoogleFonts.dmSans(color: Colors.grey),
-                            ),
+                          const EmptyStateWidget(
+                            title: 'No Notifications',
+                            description:
+                                "We'll notify you when there's an update on your appointments or queue status.",
                           ),
                         ],
                       ),
@@ -178,6 +196,7 @@ class NotificationPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

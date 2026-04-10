@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:qflow/application/auth/register_details/register_details_state.dart';
@@ -6,11 +6,14 @@ import 'package:qflow/domain/user/user_service.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
 import 'package:dartz/dartz.dart';
 
+import 'package:qflow/domain/auth/app_session.dart';
+
 @injectable
 class RegisterDetailsCubit extends Cubit<RegisterDetailsState> {
   final IUserService _userService;
+  final AppSession _appSession;
 
-  RegisterDetailsCubit(this._userService) : super(RegisterDetailsState.initial());
+  RegisterDetailsCubit(this._userService, this._appSession) : super(RegisterDetailsState.initial());
 
   void usernameChanged(String username) {
     emit(state.copyWith(username: username, failureOrSuccessOption: none()));
@@ -61,7 +64,7 @@ class RegisterDetailsCubit extends Cubit<RegisterDetailsState> {
   }
 
   Future<void> submit() async {
-    log('RegisterDetailsCubit: Submitting with image path: ${state.profileImagePath}');
+
     emit(state.copyWith(isSubmitting: true, failureOrSuccessOption: none()));
 
     final user = UserModel(
@@ -82,6 +85,16 @@ class RegisterDetailsCubit extends Cubit<RegisterDetailsState> {
       user: user,
       profileImagePath: state.profileImagePath,
     );
+
+    if (failureOrSuccess.isRight()) {
+      await _appSession.saveUsername(username: state.username);
+      await _appSession.saveProfileInfo(
+        userId: _appSession.userId ?? '', // Keep existing ID if available, or empty if waiting for refresh
+        firstName: state.firstName,
+        lastName: state.lastName,
+      );
+      await _appSession.saveLocation(city: state.city, district: state.district);
+    }
 
     emit(state.copyWith(
       isSubmitting: false,

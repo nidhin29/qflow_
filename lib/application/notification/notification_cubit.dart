@@ -24,8 +24,12 @@ class NotificationCubit extends Cubit<NotificationState> {
       (notifications) => state.copyWith(
         isLoading: false,
         notifications: notifications,
-        failureOrSuccessOption: none(),
+        failureOrSuccessOption: some(right(unit)),
       ),
     ));
+  }
+
+  void clear() {
+    emit(NotificationState.initial());
   }
 }

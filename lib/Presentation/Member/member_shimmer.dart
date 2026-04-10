@@ -36,11 +36,11 @@ class HospitalCardShimmer extends StatelessWidget {
                 SizedBox(height: 10.h),
                 const ShimmerWidget.rectangular(height: 14, width: 150),
                 const Divider(height: 30),
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const ShimmerWidget.rectangular(height: 12, width: 80),
-                    const ShimmerWidget.rectangular(height: 30, width: 100),
+                    ShimmerWidget.rectangular(height: 12, width: 80),
+                    ShimmerWidget.rectangular(height: 30, width: 100),
                   ],
                 ),
               ],

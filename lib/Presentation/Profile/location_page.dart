@@ -6,130 +6,8 @@ import 'package:qflow/application/profile/profile_cubit.dart';
 import 'package:qflow/application/profile/profile_state.dart';
 import 'package:qflow/domain/user/user_model/user_model.dart';
 
-class LocationPage extends StatefulWidget {
+class LocationPage extends StatelessWidget {
   const LocationPage({super.key});
-
-  @override
-  State<LocationPage> createState() => _LocationPageState();
-}
-
-class _LocationPageState extends State<LocationPage> {
-  final TextEditingController cityController = TextEditingController();
-  final TextEditingController districtController = TextEditingController();
-
-  @override
-  void dispose() {
-    cityController.dispose();
-    districtController.dispose();
-    super.dispose();
-  }
-
-  void _showEditLocationSheet(BuildContext context, UserModel user) {
-    cityController.text = user.city;
-    districtController.text = user.district;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => BlocProvider.value(
-        value: context.read<ProfileCubit>(),
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 20.h,
-            left: 20.w,
-            right: 20.w,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30.r),
-              topRight: Radius.circular(30.r),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Edit Location",
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontFamily: 'CabinetGrotesk',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: 25.h),
-              _buildDialogTextField("City", cityController),
-              SizedBox(height: 15.h),
-              _buildDialogTextField("District", districtController),
-              SizedBox(height: 30.h),
-              ElevatedButton(
-                onPressed: () {
-                  final updatedUser = user.copyWith(
-                    city: cityController.text,
-                    district: districtController.text,
-                  );
-                  context.read<ProfileCubit>().updateProfile(user: updatedUser);
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50.h),
-                  backgroundColor: Colors.greenAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  "Save Changes",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14.sp,
-                  ),
-                ),
-              ),
-              SizedBox(height: 30.h),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogTextField(String label, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(height: 5.h),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
-              borderSide: const BorderSide(color: Colors.black),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,12 +61,12 @@ class _LocationPageState extends State<LocationPage> {
                   ),
                   child: Column(
                     children: [
-                      _buildLocationTile("City", user.city),
+                      _LocationTile(label: "City", value: user.city),
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: 15.h),
                         child: Divider(color: Colors.grey[200]),
                       ),
-                      _buildLocationTile("District", user.district),
+                      _LocationTile(label: "District", value: user.district),
                     ],
                   ),
                 ),
@@ -223,25 +101,124 @@ class _LocationPageState extends State<LocationPage> {
     );
   }
 
-  Widget _buildLocationTile(String label, String value) {
+  void _showEditLocationSheet(BuildContext context, UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: context.read<ProfileCubit>(),
+        child: _LocationEditForm(user: user),
+      ),
+    );
+  }
+}
+
+class _LocationTile extends StatelessWidget {
+  final String label;
+  final String value;
+  const _LocationTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 14.sp,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+        Text(label, style: GoogleFonts.dmSans(fontSize: 14.sp, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+        Text(value.isEmpty ? "Not set" : value, style: TextStyle(fontSize: 16.sp, fontFamily: 'CabinetGrotesk', fontWeight: FontWeight.w700, color: Colors.black)),
+      ],
+    );
+  }
+}
+
+class _LocationEditForm extends StatefulWidget {
+  final UserModel user;
+  const _LocationEditForm({required this.user});
+
+  @override
+  State<_LocationEditForm> createState() => _LocationEditFormState();
+}
+
+class _LocationEditFormState extends State<_LocationEditForm> {
+  late TextEditingController cityController;
+  late TextEditingController districtController;
+
+  @override
+  void initState() {
+    super.initState();
+    cityController = TextEditingController(text: widget.user.city);
+    districtController = TextEditingController(text: widget.user.district);
+  }
+
+  @override
+  void dispose() {
+    cityController.dispose();
+    districtController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        top: 20.h,
+        left: 20.w,
+        right: 20.w,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(30.r), topRight: Radius.circular(30.r)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Edit Location", style: TextStyle(fontSize: 20.sp, fontFamily: 'CabinetGrotesk', fontWeight: FontWeight.w700)),
+          SizedBox(height: 25.h),
+          _EditField(label: "City", controller: cityController),
+          SizedBox(height: 15.h),
+          _EditField(label: "District", controller: districtController),
+          SizedBox(height: 30.h),
+          ElevatedButton(
+            onPressed: () {
+              final updatedUser = widget.user.copyWith(city: cityController.text, district: districtController.text);
+              context.read<ProfileCubit>().updateProfile(user: updatedUser);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(double.infinity, 50.h),
+              backgroundColor: Colors.greenAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+            ),
+            child: Text("Save Changes", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 14.sp)),
           ),
-        ),
-        Text(
-          value.isEmpty ? "Not set" : value,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontFamily: 'CabinetGrotesk',
-            fontWeight: FontWeight.w700,
-            color: Colors.black,
+          SizedBox(height: 30.h),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  const _EditField({required this.label, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12.sp, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+        SizedBox(height: 5.h),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: Colors.grey[300]!)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r), borderSide: const BorderSide(color: Colors.black)),
           ),
         ),
       ],

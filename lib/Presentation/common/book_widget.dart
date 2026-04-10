@@ -47,7 +47,7 @@ class BookFieldWidget extends StatelessWidget {
               ),
               fillColor: const Color.fromRGBO(246, 246, 246, 1),
               filled: true),
-          value: selectedDepartment.value,
+          initialValue: selectedDepartment.value,
           hint: Text(
             'Select',
             style: GoogleFonts.dmSans(

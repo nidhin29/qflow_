@@ -1,3 +1,5 @@
+
+
 import 'dart:developer';
 
 import 'package:dartz/dartz.dart';
@@ -6,6 +8,7 @@ import 'package:injectable/injectable.dart';
 import 'package:qflow/domain/appointment/appointment_model/appointment_model.dart';
 import 'package:qflow/domain/appointment/appointment_service.dart';
 import 'package:qflow/domain/core/failures.dart';
+import 'package:qflow/infrastructure/core/api_utils.dart';
 
 @LazySingleton(as: IAppointmentService)
 class AppointmentRepository implements IAppointmentService {
@@ -18,6 +21,7 @@ class AppointmentRepository implements IAppointmentService {
     required AppointmentModel appointment,
   }) async {
     try {
+      log(appointment.toString());
       final response = await _dio.post(
         '/appointments/book-appointment',
         data: {
@@ -26,25 +30,23 @@ class AppointmentRepository implements IAppointmentService {
           'patient_name': appointment.patientName,
           'appointment_date': appointment.appointmentDate,
           'appointment_time': appointment.appointmentTime,
+          'patient_id': appointment.patientId,
         },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return right(unit);
       } else {
-        final data = response.data;
-        final message = (data is Map) ? data['message'] : data?.toString();
         return left(MainFailure.serverError(
             code: response.statusCode,
-            message: message ?? 'Booking failed'));
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Booking failed'
+                : 'Booking failed'));
       }
     } on DioException catch (e) {
-      log('AppointmentRepository bookAppointment Error: ${e.toString()}');
-      final data = e.response?.data;
-      final message = (data is Map) ? data['message'] : data?.toString();
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: message ?? 'Network error occurred'));
+          message: getErrorMessage(e, 'Network error occurred')));
     } catch (e) {
       return left(const MainFailure.clientFailure());
     }
@@ -61,31 +63,29 @@ class AppointmentRepository implements IAppointmentService {
       );
 
       if (response.statusCode == 200) {
+        log(response.data.toString());
         final List<dynamic> dataList = response.data['data']?['docs'] ?? [];
        
         final appointments = dataList
             .map((e) => AppointmentModel.fromMap(e as Map<String, dynamic>))
             .toList();
-        log(appointments.toString());
         return right(appointments);
+
       } else {
-        final data = response.data;
-        final message = (data is Map) ? data['message'] : data?.toString();
         return left(MainFailure.serverError(
             code: response.statusCode,
-            message: message ?? 'Failed to fetch appointments'));
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Failed to fetch appointments'
+                : 'Failed to fetch appointments'));
       }
     } on DioException catch (e) {
-      log('AppointmentRepository getUserAppointments Error: ${e.toString()}');
-      final data = e.response?.data;
-      final message = (data is Map) ? data['message'] : data?.toString();
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: message ?? 'Failed to load appointments'));
+          message: getErrorMessage(e, 'Failed to load appointments')));
     } catch (e) {
-      log(e.toString());
       return left(const MainFailure.clientFailure());
     }
+
   }
 
   @override
@@ -105,22 +105,19 @@ class AppointmentRepository implements IAppointmentService {
             .toList();
         return right(appointments);
       } else {
-        final data = response.data;
-        final message = (data is Map) ? data['message'] : data?.toString();
         return left(MainFailure.serverError(
             code: response.statusCode,
-            message: message ?? 'Search failed'));
+            message: (response.data is Map)
+                ? response.data['message'] ?? 'Search failed'
+                : 'Search failed'));
       }
     } on DioException catch (e) {
-      log('AppointmentRepository searchAppointments Error: ${e.toString()}');
-      final data = e.response?.data;
-      final message = (data is Map) ? data['message'] : data?.toString();
       return left(MainFailure.serverError(
           code: e.response?.statusCode,
-          message: message ?? 'Failed to search appointments'));
+          message: getErrorMessage(e, 'Failed to search appointments')));
     } catch (e) {
-      log(e.toString());
       return left(const MainFailure.clientFailure());
     }
+
   }
 }

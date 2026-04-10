@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
+import "package:provider/provider.dart";
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:qflow/application/appointment/appointment_cubit.dart';
@@ -25,6 +25,9 @@ void main() async {
 
   // Initialize Notification Service
   await NotificationService().initialize();
+
+  // Initialize App Session (Reload data from local storage)
+  await getIt<AppSession>().initialize();
 
   runApp(const MyApp());
 }
@@ -58,9 +61,8 @@ class MyApp extends StatelessWidget {
             BlocProvider<HospitalCubit>(
               create: (context) {
                 final session = getIt<AppSession>();
-                final location = session.city ?? session.district ?? 'Chengannur';
                 return getIt<HospitalCubit>()
-                  ..getHospitalsByLocation(location: location);
+                  ..getHospitalsByLocation(location: session.displayLocation);
               },
             ),
             BlocProvider<NotificationCubit>(

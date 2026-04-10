@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -31,8 +31,8 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      log('User granted notification permissions');
     }
+
 
     // 2. Setup Local Notifications for Android
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -54,20 +54,20 @@ class NotificationService {
 
     // 3. Listen for Foreground Messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      log('Received foreground message: ${message.notification?.title}');
+
       _showLocalNotification(message);
     });
 
     // 4. Listen for Background/Terminated Click interactions
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      log('User tapped on background notification: ${message.data}');
+
       _handleNotificationClick(message.data);
     });
 
     // 5. Check for Initial Message (if app was terminated and opened via notification)
     RemoteMessage? initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
-      log('App opened from terminated state via notification: ${initialMessage.data}');
+
       _handleNotificationClick(initialMessage.data);
     }
   }
@@ -95,12 +95,12 @@ class NotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    log('Local notification tapped: ${response.payload}');
+
     _navigateToNotification();
   }
 
   void _handleNotificationClick(Map<String, dynamic> data) {
-    log('Handling notification navigation for: $data');
+
     _navigateToNotification();
   }
 
@@ -114,6 +114,6 @@ class NotificationService {
 // Top-level background message handler
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  log('Handling a background message: ${message.messageId}');
+
   // Note: Firebase is already initialized by the time this is called if registered in main.dart
 }

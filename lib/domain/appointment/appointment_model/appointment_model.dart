@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 class AppointmentModel {
-  final String? id;
   final String hospitalId;
   final String hospitalName;
   final String hospitalAddress;
@@ -20,7 +19,6 @@ class AppointmentModel {
   final String? estimatedServiceTime;
 
   const AppointmentModel({
-    this.id,
     required this.hospitalId,
     required this.hospitalName,
     required this.hospitalAddress,
@@ -40,14 +38,13 @@ class AppointmentModel {
 
   @override
   String toString() {
-    return 'AppointmentModel(id: $id, hospitalId: $hospitalId, hospitalName: $hospitalName, appointmentDate: $appointmentDate, department: $department, patientName: $patientName)';
+    return 'AppointmentModel( hospitalId: $hospitalId, hospitalName: $hospitalName, appointmentDate: $appointmentDate, department: $department, patientName: $patientName)';
   }
 
   factory AppointmentModel.fromMap(Map<String, dynamic> data) {
     final hospitalDetails = data['hospitalDetails'] as Map<String, dynamic>?;
     
     return AppointmentModel(
-      id: (data['_id'] ?? data['id'])?.toString(),
       hospitalId: data['hospital_id'] ?? hospitalDetails?['_id'] ?? '',
       hospitalName: data['hospital_name'] ?? hospitalDetails?['name'] ?? '',
       hospitalAddress: data['hospital_address'] ??
@@ -57,26 +54,27 @@ class AppointmentModel {
               : ''),
       appointmentDate: data['appointment_date'] ?? '',
       appointmentTime: data['appointment_time'] ?? '',
-      estimatedTime: data['estimated_time'] ?? data['estimated_service_time'] ?? 'Pending',
+      estimatedTime: data['estimated_time']?.toString() ??
+          data['estimated_service_time']?.toString() ??
+          'Pending',
       tokenNumber: data['token_number']?.toString() ?? 'TBD',
       department: data['department'] ?? '',
       departmentName: data['department_name'] ?? data['department'] ?? '',
       patientName: data['patient_name'] ?? '',
       status: data['status'] as String?,
       patientId: data['patient_id'] as String?,
-      currentlyServing: data['currently_serving'] is int 
-          ? data['currently_serving'] as int 
+      currentlyServing: data['currently_serving'] is int
+          ? data['currently_serving'] as int
           : int.tryParse(data['currently_serving']?.toString() ?? ''),
-      patientsAhead: data['patients_ahead'] is int 
-          ? data['patients_ahead'] as int 
+      patientsAhead: data['patients_ahead'] is int
+          ? data['patients_ahead'] as int
           : int.tryParse(data['patients_ahead']?.toString() ?? ''),
-      estimatedServiceTime: data['estimated_service_time'] as String?,
+      estimatedServiceTime: data['estimated_service_time']?.toString(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id,
       'hospital_id': hospitalId,
       'hospital_name': hospitalName,
       'hospital_address': hospitalAddress,
@@ -104,7 +102,6 @@ class AppointmentModel {
   String toJson() => json.encode(toMap());
 
   AppointmentModel copyWith({
-    String? id,
     String? hospitalId,
     String? hospitalName,
     String? hospitalAddress,
@@ -122,7 +119,6 @@ class AppointmentModel {
     String? estimatedServiceTime,
   }) {
     return AppointmentModel(
-      id: id ?? this.id,
       hospitalId: hospitalId ?? this.hospitalId,
       hospitalName: hospitalName ?? this.hospitalName,
       hospitalAddress: hospitalAddress ?? this.hospitalAddress,

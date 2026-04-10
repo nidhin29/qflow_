@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 class UserModel {
+  final String? id;
   final String firstName;
   final String lastName;
   final String username;
@@ -17,6 +18,7 @@ class UserModel {
   final String? fcmToken;
 
   const UserModel({
+    this.id,
     required this.firstName,
     required this.lastName,
     required this.username,
@@ -40,6 +42,7 @@ class UserModel {
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
     return UserModel(
+      id: (data['_id'] ?? data['id'])?.toString(),
       firstName: (data['first_name'] ?? data['firstName'] ?? '').toString(),
       lastName: (data['last_name'] ?? data['lastName'] ?? '').toString(),
       username: (data['username'] ?? '').toString(),
@@ -60,6 +63,7 @@ class UserModel {
 
   Map<String, dynamic> toMap() {
     return {
+      if (id != null) 'id': id,
       'first_name': firstName,
       'last_name': lastName,
       'username': username,
@@ -86,6 +90,7 @@ class UserModel {
   String toJson() => json.encode(toMap());
 
   UserModel copyWith({
+    String? id,
     String? firstName,
     String? lastName,
     String? username,
@@ -102,6 +107,7 @@ class UserModel {
     String? fcmToken,
   }) {
     return UserModel(
+      id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       username: username ?? this.username,

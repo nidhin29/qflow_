@@ -1,4 +1,4 @@
-import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:injectable/injectable.dart';
@@ -17,6 +17,14 @@ abstract class NetworkModule {
       baseUrl: 'https://backend.devforchange.com/api/v1',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
+    ));
+
+    dio.interceptors.add(LogInterceptor(
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
     ));
 
     dio.interceptors.add(InterceptorsWrapper(
@@ -38,7 +46,7 @@ abstract class NetworkModule {
         }
 
         if (token != null) {
-          log('NetworkModule: Attaching Bearer token to request: ${options.path}');
+
           options.headers['Authorization'] = 'Bearer $token';
         }
 
@@ -46,9 +54,7 @@ abstract class NetworkModule {
       },
       onError: (err, handler) async {
         // If 401 Unauthorized, try to refresh token
-        if (err.response?.statusCode == 401) {
-          log('NetworkModule: 401 Unauthorized detected on ${err.requestOptions.path}. Attempting refresh...');
-
+        if (err.response?.statusCode == 401 && !err.requestOptions.path.contains('/users/logout')) {
           try {
             // Use getIt to avoid circular dependency during Dio initialization
             final authService = getIt<IAuthService>();
@@ -56,12 +62,12 @@ abstract class NetworkModule {
 
             return await result.fold(
               (failure) async {
-                log('NetworkModule: Refresh token failed or expired. Logging out.');
+
                 await authService.logout();
                 return handler.reject(err);
               },
               (success) async {
-                log('NetworkModule: Token refreshed successfully. Retrying original request.');
+
 
                 // Create new options with the fresh token
                 final options = err.requestOptions;
@@ -78,7 +84,7 @@ abstract class NetworkModule {
               },
             );
           } catch (e) {
-            log('NetworkModule: Exception during refresh flow: $e');
+
             return handler.reject(err);
           }
         }

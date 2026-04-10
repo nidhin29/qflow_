@@ -9,6 +9,7 @@ import 'package:qflow/application/auth/sign_in/sign_in_state.dart';
 import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -29,18 +30,7 @@ class _SignInScreenState extends State<SignInScreen> {
           state.authFailureOrSuccessOption.fold(
             () => null,
             (either) => either.fold(
-              (failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(failure.map(
-                      clientFailure: (_) => 'Network Error',
-                      authFailure: (_) => 'Invalid credentials',
-                      serverFailure: (_) => 'Server Error',
-                      serverError: (e) => e.message ?? 'Authentication Failed',
-                    )),
-                  ),
-                );
-              },
+              (failure) => showErrorSnackBar(context, failure),
               (successType) {
                 if (successType == AuthSuccess.incomplete) {
                   Navigator.of(context).pushReplacement(

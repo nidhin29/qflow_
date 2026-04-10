@@ -10,6 +10,7 @@ import 'package:qflow/application/profile/profile_cubit.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
 import 'package:qflow/domain/auth/app_session.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class SearchPage extends StatefulWidget {
   final String label;
@@ -78,9 +79,19 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
-      body: Padding(
+    return BlocListener<HospitalCubit, hs.HospitalState>(
+      listener: (context, state) {
+        state.failureOrSuccessOption.fold(
+          () => null,
+          (either) => either.fold(
+            (failure) => showErrorSnackBar(context, failure),
+            (success) => null,
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
+        body: Padding(
         padding: EdgeInsets.only(left: 25.h, right: 25.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,8 +369,9 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class TileWidget extends StatelessWidget {

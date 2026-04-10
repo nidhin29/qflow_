@@ -20,11 +20,11 @@ class AppointmentCardShimmer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const ShimmerWidget.rectangular(height: 50, width: 150),
-                const ShimmerWidget.rectangular(height: 40, width: 60),
+                ShimmerWidget.rectangular(height: 50, width: 150),
+                ShimmerWidget.rectangular(height: 40, width: 60),
               ],
             ),
             SizedBox(height: 15.h),

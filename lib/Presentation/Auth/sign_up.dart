@@ -10,6 +10,7 @@ import 'package:qflow/domain/auth/auth_success.dart';
 import 'package:qflow/Presentation/Home/mainscreen.dart';
 import 'package:qflow/constants/const.dart';
 import 'package:qflow/domain/core/di/injection.dart';
+import 'package:qflow/Presentation/Core/snackbar_utils.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -31,17 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           state.authFailureOrSuccessOption.fold(
             () => null,
             (either) => either.fold(
-              (failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(failure.map(
-                    clientFailure: (_) => 'Client Failure',
-                    authFailure: (_) => 'Auth Failure',
-                    serverFailure: (_) => 'Server Error',
-                    serverError: (e) => e.message ?? 'Server Error',
-                  ))),
-                );
-              },
+              (failure) => showErrorSnackBar(context, failure),
               (successType) {
                 // If it's a regular email registration, go to OTP
                 if (state.emailAddress.isNotEmpty && state.password.isNotEmpty && state.fullName.isNotEmpty) {
