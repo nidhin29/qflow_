@@ -151,4 +151,23 @@ class UserRepository implements IUserService {
       return left(const MainFailure.clientFailure());
     }
   }
+
+  @override
+  Future<Either<MainFailure, Unit>> updateFcmToken(String fcmToken) async {
+    try {
+      final response = await _dio.patch(
+        '/users/update-fcm-token',
+        data: {'fcmToken': fcmToken},
+      );
+
+      if (response.statusCode == 200) {
+        return right(unit);
+      } else {
+        return left(const MainFailure.serverFailure());
+      }
+    } catch (e) {
+      log('UserRepository updateFcmToken Error: ${e.toString()}');
+      return left(const MainFailure.clientFailure());
+    }
+  }
 }

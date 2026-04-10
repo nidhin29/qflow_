@@ -14,4 +14,6 @@ abstract class IUserService {
     required UserModel user,
     String? profileImagePath,
   });
+
+  Future<Either<MainFailure, Unit>> updateFcmToken(String fcmToken);
 }

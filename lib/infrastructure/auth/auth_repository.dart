@@ -64,9 +64,7 @@ class AuthRepository implements IAuthService {
         final refresh = data['refreshToken'] ?? data['refresh_token'];
         final username = data['username'] ?? data['fullName'] ?? '';
         
-        await _storage.write(key: 'access_token', value: access);
-        await _storage.write(key: 'refresh_token', value: refresh);
-        _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
+        await _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
         _session.username = username;
 
         if (response.statusCode == 201) {
@@ -115,9 +113,7 @@ class AuthRepository implements IAuthService {
         final refresh = data['refreshToken'] ?? data['refresh_token'];
         final username = data['username'] ?? data['fullName'] ?? '';
 
-        await _storage.write(key: 'access_token', value: access);
-        await _storage.write(key: 'refresh_token', value: refresh);
-        _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
+        await _session.saveTokens(access: access ?? '', refresh: refresh ?? '');
         _session.username = username;
 
         if (response.statusCode == 201) {
@@ -171,9 +167,7 @@ class AuthRepository implements IAuthService {
         final username = data['username'];
 
         if (access != null && refresh != null) {
-          await _storage.write(key: 'access_token', value: access);
-          await _storage.write(key: 'refresh_token', value: refresh);
-          _session.saveTokens(access: access, refresh: refresh);
+          await _session.saveTokens(access: access, refresh: refresh);
           if (username != null) _session.username = username;
           log('AuthRepository: Tokens saved successfully');
         } else {
@@ -237,15 +231,23 @@ class AuthRepository implements IAuthService {
   @override
   Future<Either<MainFailure, Unit>> logout() async {
     try {
-      // Attempt to notify server of logout
+      // 1. Sign out from Google if applicable
+      final googleSignIn = GoogleSignIn(
+        serverClientId:
+            '796184189112-36k5b1r52phggfn5d7rpotmttvv2vhvm.apps.googleusercontent.com',
+      );
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+        log('AuthRepository: Signed out from Google');
+      }
+
+      // 2. Attempt to notify server of logout
       await _dio.post('/users/logout');
     } catch (e) {
-      log('AuthRepository: Logout API call failed, but clearing local session anyway: $e');
+      log('AuthRepository: Logout process encountered issues, but clearing local session anyway: $e');
     } finally {
-      // ALWAYS clear local session data regardless of API success/failure
-      await _storage.delete(key: 'access_token');
-      await _storage.delete(key: 'refresh_token');
-      _session.clear();
+      // 3. ALWAYS clear local session data regardless of API success/failure
+      await _session.clear();
     }
     return right(unit);
   }
@@ -278,9 +280,7 @@ class AuthRepository implements IAuthService {
         final refresh = data['refreshToken'] ?? data['refresh_token'];
 
         if (access != null && refresh != null) {
-          await _storage.write(key: 'access_token', value: access);
-          await _storage.write(key: 'refresh_token', value: refresh);
-          _session.saveTokens(access: access, refresh: refresh);
+          await _session.saveTokens(access: access, refresh: refresh);
           log('AuthRepository: Tokens refreshed successfully');
           return right(unit);
         }

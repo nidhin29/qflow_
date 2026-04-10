@@ -47,21 +47,29 @@ class AppointmentModel {
     final hospitalDetails = data['hospitalDetails'] as Map<String, dynamic>?;
     
     return AppointmentModel(
-      id: data['id'] as String?,
+      id: (data['_id'] ?? data['id'])?.toString(),
       hospitalId: data['hospital_id'] ?? hospitalDetails?['_id'] ?? '',
       hospitalName: data['hospital_name'] ?? hospitalDetails?['name'] ?? '',
-      hospitalAddress: data['hospital_address'] ?? hospitalDetails?['address'] ?? '',
+      hospitalAddress: data['hospital_address'] ??
+          hospitalDetails?['address'] ??
+          (hospitalDetails?['city'] != null
+              ? '${hospitalDetails?['city']}, ${hospitalDetails?['district']}'
+              : ''),
       appointmentDate: data['appointment_date'] ?? '',
       appointmentTime: data['appointment_time'] ?? '',
-      estimatedTime: data['estimated_time'] ?? 'Pending',
+      estimatedTime: data['estimated_time'] ?? data['estimated_service_time'] ?? 'Pending',
       tokenNumber: data['token_number']?.toString() ?? 'TBD',
       department: data['department'] ?? '',
       departmentName: data['department_name'] ?? data['department'] ?? '',
       patientName: data['patient_name'] ?? '',
       status: data['status'] as String?,
       patientId: data['patient_id'] as String?,
-      currentlyServing: data['currently_serving'] as int?,
-      patientsAhead: data['patients_ahead'] as int?,
+      currentlyServing: data['currently_serving'] is int 
+          ? data['currently_serving'] as int 
+          : int.tryParse(data['currently_serving']?.toString() ?? ''),
+      patientsAhead: data['patients_ahead'] is int 
+          ? data['patients_ahead'] as int 
+          : int.tryParse(data['patients_ahead']?.toString() ?? ''),
       estimatedServiceTime: data['estimated_service_time'] as String?,
     );
   }

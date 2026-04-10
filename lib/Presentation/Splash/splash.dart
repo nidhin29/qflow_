@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
 import 'package:qflow/Presentation/Auth/start.dart';
+import 'package:qflow/Presentation/Home/mainscreen.dart';
+import 'package:qflow/domain/auth/app_session.dart';
+import 'package:qflow/domain/core/di/injection.dart';
+import 'package:qflow/domain/user/user_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,25 +21,60 @@ class SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _startAnimation();
     animcontroller = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 2000));
     animation =
         CurvedAnimation(parent: animcontroller, curve: Curves.easeInOut);
 
     animcontroller.forward();
-    Future.delayed(const Duration(milliseconds: 2700), () {
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    final startTime = DateTime.now();
+
+    // 1. Show animation start
+    _startAnimation();
+
+    // 2. Initialize Session (load tokens from storage)
+    final session = getIt<AppSession>();
+    await session.initialize();
+
+    Widget targetPage = const StartPage();
+
+    // 3. Check Auth Status if tokens exist
+    if (session.isLoggedIn) {
+      final userService = getIt<IUserService>();
+      final result = await userService.getUserDetails();
+      
+      if (result.isRight()) {
+        targetPage = const MainScreen();
+      } else {
+        // If getting details fails (e.g. refresh token expired)
+        targetPage = const StartPage();
+      }
+    }
+
+    // 4. Ensure minimum splash time (2 seconds for animation)
+    final elapsed = DateTime.now().difference(startTime);
+    if (elapsed < const Duration(seconds: 2)) {
+      await Future.delayed(const Duration(seconds: 2) - elapsed);
+    }
+
+    if (mounted) {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (context) => const StartPage(),
+        builder: (context) => targetPage,
       ));
-    });
+    }
   }
 
   void _startAnimation() {
-    Timer(const Duration(milliseconds: 700), () {
-      setState(() {
-        _radius = 80.0;
-      });
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) {
+        setState(() {
+          _radius = 80.0;
+        });
+      }
     });
   }
 

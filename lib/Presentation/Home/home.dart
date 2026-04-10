@@ -11,6 +11,7 @@ import 'package:qflow/domain/appointment/appointment_model/appointment_model.dar
 import 'package:qflow/Presentation/Home/home_shimmer.dart';
 import 'package:qflow/Presentation/Core/empty_state_widget.dart';
 import 'package:qflow/Presentation/Core/error_state_widget.dart';
+import 'package:qflow/Presentation/Notification/notification.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -100,19 +101,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    Container(
-                      width: 50.w,
-                      height: 50.w,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color.fromRGBO(245, 245, 245, 1),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          'assets/icon/not.png',
-                          width: 24.w,
-                          height: 24.w,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 50.w,
+                        height: 50.w,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color.fromRGBO(245, 245, 245, 1),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            'assets/icon/not.png',
+                            width: 24.w,
+                            height: 24.w,
+                          ),
                         ),
                       ),
                     )
@@ -511,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: GoogleFonts.dmSans(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2C5E8A).withOpacity(0.7),
+                            color: Colors.grey[600],
                           ),
                         ),
                       ),
@@ -574,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 BookTileWidget(
                   heading: 'Estimated Time',
-                  content: appointment.appointmentTime,
+                  content: appointment.estimatedTime,
                 ),
                 BookTileWidget(
                   heading: 'OP Ticket Number',

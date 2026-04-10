@@ -1,4 +1,6 @@
+import 'dart:developer';
 import 'package:dartz/dartz.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:qflow/application/profile/profile_state.dart';
@@ -34,12 +36,33 @@ class ProfileCubit extends Cubit<ProfileState> {
           city: user.city,
           district: user.district,
         );
+
+        // Check and sync FCM token if null or empty
+        if (user.fcmToken == null || user.fcmToken!.isEmpty) {
+          _syncFcmToken();
+        }
+
         return state.copyWith(
           isLoading: false,
           userOption: some(user),
         );
       },
     ));
+  }
+
+  Future<void> _syncFcmToken() async {
+    try {
+      final fcm = FirebaseMessaging.instance;
+      // Request permission (standard practice for FCM)
+      await fcm.requestPermission();
+      final token = await fcm.getToken();
+      if (token != null) {
+        log('ProfileCubit: Syncing FCM Token: $token');
+        await _userService.updateFcmToken(token);
+      }
+    } catch (e) {
+      log('ProfileCubit FCM Sync Error: ${e.toString()}');
+    }
   }
 
   void profileImageChanged(String path) {

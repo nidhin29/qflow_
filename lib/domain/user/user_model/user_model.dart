@@ -14,6 +14,7 @@ class UserModel {
   final String district;
   final String? profileImageUrl;
   final String? thumbnailUrl;
+  final String? fcmToken;
 
   const UserModel({
     required this.firstName,
@@ -29,11 +30,12 @@ class UserModel {
     required this.district,
     this.profileImageUrl,
     this.thumbnailUrl,
+    this.fcmToken,
   });
 
   @override
   String toString() {
-    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, city: $city, district: $district, profileImageUrl: $profileImageUrl, thumbnailUrl: $thumbnailUrl)';
+    return 'UserModel(firstName: $firstName, lastName: $lastName, username: $username, age: $age, weight: $weight, height: $height, gender: $gender, bloodGroup: $bloodGroup, contactNumber: $contactNumber, city: $city, district: $district, profileImageUrl: $profileImageUrl, thumbnailUrl: $thumbnailUrl, fcmToken: $fcmToken)';
   }
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
@@ -52,6 +54,7 @@ class UserModel {
       district: (data['district'] ?? '').toString(),
       profileImageUrl: data['profile_image'] ?? data['profileImageUrl'],
       thumbnailUrl: data['thumbnail_url'] ?? data['thumbnailUrl'],
+      fcmToken: data['fcmToken'] ?? data['fcm_token'],
     );
   }
 
@@ -70,6 +73,7 @@ class UserModel {
       'district': district,
       'profile_image': profileImageUrl,
       'thumbnail_url': thumbnailUrl,
+      'fcm_token': fcmToken,
     };
   }
 
@@ -95,6 +99,7 @@ class UserModel {
     String? district,
     String? profileImageUrl,
     String? thumbnailUrl,
+    String? fcmToken,
   }) {
     return UserModel(
       firstName: firstName ?? this.firstName,
@@ -110,6 +115,7 @@ class UserModel {
       district: district ?? this.district,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }

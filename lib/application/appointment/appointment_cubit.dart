@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -25,27 +26,67 @@ class AppointmentCubit extends Cubit<AppointmentState> {
   }
 
   void _handleSocketUpdate(Map<String, dynamic> data) {
-    // Expected payload: { hospital_id, department, currently_serving, patients_ahead }
+    log('AppointmentCubit: Received update: $data');
+    // Payload format: { "appointment_date": "2026-04-10", "department": "Cardiology", "currently_serving": 5 }
     final String? hospitalId = data['hospital_id'];
     final String? department = data['department'];
-    final int? currentlyServing = data['currently_serving'];
-    final int? patientsAhead = data['patients_ahead'];
-    final String? estimatedServiceTime = data['estimated_service_time'];
+    final String? appointmentDate = data['appointment_date'];
 
-    if (hospitalId == null || department == null) return;
+    final int? currentlyServing = data['currently_serving'] is int
+        ? data['currently_serving'] as int
+        : int.tryParse(data['currently_serving']?.toString() ?? '');
 
-    final updatedAppointments = state.upcomingAppointments.map((appt) {
-      if (appt.hospitalId == hospitalId && appt.department == department) {
+    final int? patientsAhead = data['patients_ahead'] is int
+        ? data['patients_ahead'] as int
+        : int.tryParse(data['patients_ahead']?.toString() ?? '');
+    
+    final String? estimatedTime = data['estimated_time'] ?? data['estimated_service_time'];
+
+    // Update upcoming appointments matching the notification criteria
+    final updatedUpcoming = state.upcomingAppointments.map((appt) {
+      // Priority 1: Match by hospitalId if provided in payload
+      // Priority 2: Match by date and department if hospitalId is missing
+      // Using .startsWith() to accommodate full ISO strings vs short date strings
+      final bool isMatch = (hospitalId != null && appt.hospitalId == hospitalId && appt.department == department) ||
+                          (hospitalId == null && 
+                           appointmentDate != null && 
+                           appt.appointmentDate.startsWith(appointmentDate) && 
+                           appt.department == department);
+
+      if (isMatch) {
         return appt.copyWith(
           currentlyServing: currentlyServing ?? appt.currentlyServing,
           patientsAhead: patientsAhead ?? appt.patientsAhead,
-          estimatedServiceTime: estimatedServiceTime ?? appt.estimatedServiceTime,
+          estimatedTime: estimatedTime ?? appt.estimatedTime,
+          estimatedServiceTime: estimatedTime ?? appt.estimatedServiceTime,
         );
       }
       return appt;
     }).toList();
 
-    emit(state.copyWith(upcomingAppointments: updatedAppointments));
+    // Update search results similarly
+    final updatedSearch = state.searchResults.map((appt) {
+      final bool isMatch = (hospitalId != null && appt.hospitalId == hospitalId && appt.department == department) ||
+                          (hospitalId == null && 
+                           appointmentDate != null && 
+                           appt.appointmentDate.startsWith(appointmentDate) && 
+                           appt.department == department);
+
+      if (isMatch) {
+        return appt.copyWith(
+          currentlyServing: currentlyServing ?? appt.currentlyServing,
+          patientsAhead: patientsAhead ?? appt.patientsAhead,
+          estimatedTime: estimatedTime ?? appt.estimatedTime,
+          estimatedServiceTime: estimatedTime ?? appt.estimatedServiceTime,
+        );
+      }
+      return appt;
+    }).toList();
+
+    emit(state.copyWith(
+      upcomingAppointments: updatedUpcoming,
+      searchResults: updatedSearch,
+    ));
   }
 
   Future<void> getUpcomingAppointments() async {

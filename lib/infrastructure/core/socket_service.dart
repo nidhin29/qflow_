@@ -53,7 +53,15 @@ class SocketService {
       log('SocketService: Error: $err');
     });
 
-    // Listen for generic queue updates
+    // Listen for the new camelCase queue updates
+    _socket!.on('queueUpdate', (data) {
+      log('SocketService: Received queueUpdate: $data');
+      if (data is Map<String, dynamic>) {
+        _updateController.add(data);
+      }
+    });
+
+    // Keep generic queue updates as fallback
     _socket!.on('queue_update', (data) {
       log('SocketService: Received queue_update: $data');
       if (data is Map<String, dynamic>) {
